@@ -24,7 +24,8 @@ public class Application extends JFrame {
         logInPanel = new UserLogIn(this);
         appPanels.add(logInPanel);
         logInPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
-        setContentPane(logInPanel);
+        //setContentPane(logInPanel);
+        changeToPatientMenu();
     }
 
     public void initComponents() {
@@ -62,5 +63,11 @@ public class Application extends JFrame {
         patientMenu.setVisible(true);
         this.setContentPane(patientMenu);
 
+    }
+
+    public void changeToPanel(JPanel panel) {
+        hideAllPanels();
+        panel.setVisible(true);
+        this.setContentPane(panel);
     }
 }

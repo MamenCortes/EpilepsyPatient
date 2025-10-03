@@ -35,7 +35,7 @@ public class PanelCoverForMenu extends JPanel {
         picLabel.setIcon(new ImageIcon(PanelCoverLogIn.class.getResource("/icons/epilepsy64.png")));
         add(picLabel, "cell 0 0,alignx left,growx");
 
-        title = new JLabel("Urgency Management");
+        title = new JLabel("EpiCare");
         title.setFont(new Font("sansserif", 1, 20));
         title.setForeground(new Color(245, 245, 245));
         add(title, "cell 1 0, align left, grow x");
