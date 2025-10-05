@@ -11,27 +11,22 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 
-public class PatientInfo extends JPanel implements ActionListener {
+public class DoctorInfo extends JPanel implements ActionListener {
     private Application appMain;
     private JLabel nameHeading;
     private MyTextField name;
-    private JLabel surnameHeading;
-    private MyTextField surname;
     private JLabel emailHeading;
     private MyTextField email;
     private JLabel phoneHeading;
     private MyTextField phoneNumber;
-    private JLabel sexHeading;
-    private MyTextField sex;
+    private JLabel specHeading;
+    private MyTextField speciality;
     private MyComboBox<String> nextStep;
-    private JLabel birthDateHeading;
-    private MyTextField birthDate;
+    private JLabel officeHeading;
+    private MyTextField office;
 
     private JLabel title;
     protected String titleText = " ";
-    protected JButton backButton;
-    protected JButton nextButton;
-    protected JButton deleteButton;
     protected JButton applyChanges;
     protected JButton goBackButton;
     protected JLabel errorMessage;
@@ -48,44 +43,46 @@ public class PatientInfo extends JPanel implements ActionListener {
 
 
     //private JDateChooser birthDate;
-    public PatientInfo(Application appMain) {
+    public DoctorInfo(Application appMain) {
         this.appMain = appMain;
-        initPatientInfo();
+        initDoctorInfo();
 
     }
 
-    public void initPatientInfo() {
-        this.titleText = "Patient information";
+    public void initDoctorInfo() {
+        this.titleText = "Physician information";
 
         //Initialize values
-        //TODO: replace with actual patient values
+        //TODO: replace with actual doctor values
         name = new MyTextField();
-        name.setText("Jane");
+        name.setText("Dr. Michal Al-Hajjar");
         name.setEnabled(false); //Doesnt allow editing
-        surname = new MyTextField();
-        surname.setText("Doe");
-        surname.setEnabled(false);
         email = new MyTextField();
-        email.setText("jane.doe@gmail.com");
+        email.setText("michal.alhajjar@gmail.com");
         email.setEnabled(false);
         phoneNumber = new MyTextField();
         phoneNumber.setText("123456789");
         phoneNumber.setEnabled(false);
-        sex = new MyTextField();
-        sex.setText("Non Binary");
-        sex.setEnabled(false);
-        birthDate = new MyTextField();
-        birthDate.setText("1999-11-11");
-        birthDate.setEnabled(false);
+        speciality = new MyTextField();
+        speciality.setText("Neurologist | Epilepsy Specialist ");
+        speciality.setEnabled(false);
+        office = new MyTextField();
+        office.setText(
+                "Hospital General Universitario Gregorio Marañón\n" +
+                "\n" +
+                "C/ Doctor Esquerdo, 46\n" +
+                "\n" +
+                "28007 Madrid1");
+        office.setEnabled(false);
         formContainer = new JPanel();
-        initPatientForm();
+        initDoctorForm();
     }
 
-    private void initPatientForm() {
+    private void initDoctorForm() {
         //this.setLayout(new MigLayout("fill, inset 15, gap 0, wrap 4, debug", "[][][][]", "[][][][][][][][][][]"));
         this.setLayout(new MigLayout("debug, fill", "[][][][]", "[][][][][][][][][][]"));
         formContainer.setBackground(Color.white);
-        formContainer.setLayout(new MigLayout("fill, inset 10, gap 5, wrap 2", "[grow 50][grow 50]", "[][][][][][][]push"));
+        formContainer.setLayout(new MigLayout("fill, inset 10, gap 5, wrap 2", "[grow 10][grow 90]", "[][][][]push"));
 
         //Add Title
         title = new JLabel(titleText);
@@ -98,7 +95,7 @@ public class PatientInfo extends JPanel implements ActionListener {
 
         //add(formContainer,  "cell 0 1 4 8, grow, gap 10");
         //place in column 0, row 1, expand to 4 columns and 8 rows. Gap 10px left and right
-        add(formContainer,  "cell 0 1 4 8, grow, gap 10 10");
+        add(formContainer, "cell 0 1 4 8, grow, gap 10 10");
 
         //add(title1, "cell 0 0, grow");
 
@@ -107,47 +104,39 @@ public class PatientInfo extends JPanel implements ActionListener {
         nameHeading = new JLabel("Name*");
         nameHeading.setFont(contentFont);
         nameHeading.setForeground(contentColor);
-        formContainer.add(nameHeading, "cell 0 0");
-        //add(nameText, "skip 1, grow");
-
-        surnameHeading = new JLabel("Surname*");
-        surnameHeading.setFont(contentFont);
-        surnameHeading.setForeground(contentColor);
-        formContainer.add(surnameHeading, "grow");
+        //formContainer.add(nameHeading, "cell 0 0");
+        formContainer.add(nameHeading, "grow");
 
         //ROW 2
         formContainer.add(name, "grow");
-        formContainer.add(surname, "grow");
 
         //ROW 3
-        sexHeading = new JLabel("Sex*");
-        sexHeading.setFont(contentFont);
-        sexHeading.setForeground(contentColor);
-        formContainer.add(sexHeading, "grow");
-
-        birthDateHeading = new JLabel("Date of Birth*");
-        birthDateHeading.setFont(contentFont);
-        birthDateHeading.setForeground(contentColor);
-        formContainer.add(birthDateHeading, "grow");
-
-        //ROW 4
-        formContainer.add(sex, "grow");
-        formContainer.add(birthDate,  "grow"); //TODO create birth date chooser
-
-        //ROW 5
         emailHeading = new JLabel("Email*");
         emailHeading.setFont(contentFont);
         emailHeading.setForeground(contentColor);
         formContainer.add(emailHeading, "grow");
+        //add(nameText, "skip 1, grow");
 
-        phoneHeading = new JLabel("Phone Number*");
-        phoneHeading.setFont(contentFont);
-        phoneHeading.setForeground(contentColor);
-        formContainer.add(phoneHeading, "grow");
+        //ROW 4
+        formContainer.add(email, "grow");
 
         //ROW 5
-        formContainer.add(email, "grow");
-        formContainer.add(phoneNumber, "grow");
+        specHeading = new JLabel("Speciality*");
+        specHeading.setFont(contentFont);
+        specHeading.setForeground(contentColor);
+        formContainer.add(specHeading, "grow");
+        //ROW 6
+        formContainer.add(speciality, "grow");
+
+
+        //ROW 7
+        officeHeading = new JLabel("Office*");
+        officeHeading.setFont(contentFont);
+        officeHeading.setForeground(contentColor);
+        formContainer.add(officeHeading, "grow");
+
+        //ROW 8
+        formContainer.add(office, "grow"); //TODO create birth date chooser
 
         //Add buttons
         goBackButton = new MyButton("GO BACK");
@@ -174,7 +163,7 @@ public class PatientInfo extends JPanel implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if(e.getSource() == goBackButton) {
+        if (e.getSource() == goBackButton) {
             appMain.changeToPatientMenu();
         }
     }

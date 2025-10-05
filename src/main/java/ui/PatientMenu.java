@@ -13,13 +13,18 @@ public class PatientMenu extends MenuTemplate {
     private JButton seeReportHistory;
     private JButton recordBitalino;
     private JButton logOutButton;
+    private JButton connectBitalino;
     private Application appMenu;
     private PatientInfo patientInfo;
+    private DoctorInfo doctorInfo;
+    private ReportsHistory reportsHistory;
 
     public PatientMenu(Application appMenu) {
         //super();
         this.appMenu = appMenu;
         patientInfo = new PatientInfo(appMenu);
+        doctorInfo = new DoctorInfo(appMenu);
+        reportsHistory = new ReportsHistory(appMenu);
         addButtons();
         this.init();
     }
@@ -30,10 +35,12 @@ public class PatientMenu extends MenuTemplate {
         seeReportHistory = new MyButton("Report History");
         recordBitalino = new MyButton("New Recording");
         logOutButton = new MyButton("Log Out");
+        connectBitalino = new MyButton("Connect Bitalino");
 
         buttons.add(seePatientDetails);
         buttons.add(seeDoctorInfo);
         buttons.add(seeReportHistory);
+        buttons.add(connectBitalino);
         buttons.add(recordBitalino);
         buttons.add(logOutButton);
     }
@@ -42,11 +49,13 @@ public class PatientMenu extends MenuTemplate {
     public void actionPerformed(ActionEvent e) {
         if(e.getSource()== seeDoctorInfo) {
             //appMenu.changeToAddPatient();
+            appMenu.changeToPanel(doctorInfo);
         }else if(e.getSource()== seePatientDetails) {
             //appMenu.changeToSearchPatient();
             appMenu.changeToPanel(patientInfo);
         }else if(e.getSource()== seeReportHistory) {
             //appMenu.changeToSearchPatient();
+            appMenu.changeToPanel(reportsHistory);
         }else if(e.getSource()== recordBitalino) {
             //appMenu.changeToSearchPatient();
         }else if(e.getSource()==logOutButton) {
