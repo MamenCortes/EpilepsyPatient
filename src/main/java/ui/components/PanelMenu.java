@@ -1,8 +1,10 @@
 package ui.components;
 
 import net.miginfocom.swing.MigLayout;
+import ui.Application;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.ArrayList;
 
 public class PanelMenu extends JPanel {
@@ -19,6 +21,10 @@ public class PanelMenu extends JPanel {
         //this.buttons = buttons; 
         this.numButtons = buttons.size();
         this.buttons = buttons;
+
+        setBackground(Application.light_purple);
+        setOpaque(true);
+
         setLayout();
         initComponents();
 
@@ -75,7 +81,7 @@ public class PanelMenu extends JPanel {
                 numColumns++;
             }
         }
-        this.setLayout(new MigLayout("fill, inset 0, gap 5, wrap", stringColumns, stringRows));
+        this.setLayout(new MigLayout("fill, inset 0, gap 10, wrap", stringColumns, stringRows));
 
     }
 

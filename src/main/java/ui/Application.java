@@ -10,7 +10,14 @@ public class Application extends JFrame {
     private ArrayList<JPanel> appPanels;
     private UserLogIn logInPanel;
     private PatientMenu patientMenu;
-
+    public static Color darker_purple = new Color(114, 82, 153);
+    public static Color dark_purple = new Color(170, 84, 204);
+    public static Color pink = new Color(226, 169, 241);
+    public static Color purple = new Color(196, 158, 207);
+    public static Color turquoise = new Color(94, 186, 176);
+    public static Color light_purple = new Color(239, 232, 255);
+    public static Color light_turquoise = new Color(193, 252, 244);
+    public static Color dark_turquoise = new Color(73, 129, 122);
     public static void main(String[] args) {
         Application app = new Application();
         app.setVisible(true);
@@ -33,7 +40,7 @@ public class Application extends JFrame {
         //setSize(602, 436);
         setLayout(null);
         setLocationRelativeTo(null);
-        setIconImage(new ImageIcon(getClass().getResource("/icons/epilepsy512.png")).getImage());
+        setIconImage(new ImageIcon(getClass().getResource("/icons/night_guardian_mini_500.png")).getImage());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     }

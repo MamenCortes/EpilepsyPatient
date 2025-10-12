@@ -1,5 +1,7 @@
 package ui.components;
 
+import ui.Application;
+
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -15,8 +17,16 @@ import java.awt.image.BufferedImage;
 public class MyButton extends JButton {
 
     private static final long serialVersionUID = 5848952178038888829L;
-    private final Color backgroundColor = new Color(0xE6F1F4);
-    private final Color foregroundColor = new Color(35, 166, 97);
+    //private final Color backgroundColor = new Color(0xE6F1F4);
+    //private final Color foregroundColor = new Color(35, 166, 97);
+
+    //private final Color backgroundColor = Application.light_purple;
+    //private final Color foregroundColor = Application.dark_purple;
+
+    private final Color backgroundColor = Application.darker_purple;
+    private final Color foregroundColor = Application.light_purple;
+
+
     private ImageIcon image;
     private final Font font = new Font("sansserif", 1, 15);
 
@@ -31,14 +41,23 @@ public class MyButton extends JButton {
         this.setText(text);
         this.setBackground(backgroundColor);
         this.setForeground(foregroundColor.darker());
-        System.out.println(foregroundColor.darker());
+        //System.out.println(foregroundColor.darker());
         this.setFont(font);
         this.setUI(new StyledButtonUI());
     }
 
     public MyButton(String text) {
         this.setBackground(backgroundColor);
-        this.setForeground(foregroundColor.darker());
+        //this.setForeground(foregroundColor.darker());
+        this.setForeground(foregroundColor);
+        this.setText(text);
+        this.setFont(font);
+        this.setUI(new StyledButtonUI());
+    }
+
+    public MyButton(String text, Color backgroundColor, Color foregroundColor) {
+        this.setBackground(backgroundColor);
+        this.setForeground(foregroundColor);
         this.setText(text);
         this.setFont(font);
         this.setUI(new StyledButtonUI());
