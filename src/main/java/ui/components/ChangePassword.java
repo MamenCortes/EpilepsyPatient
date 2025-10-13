@@ -10,6 +10,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
+import ui.Application;
 
 public class ChangePassword extends JPanel {
 
@@ -20,7 +21,7 @@ public class ChangePassword extends JPanel {
         this.setLayout(new MigLayout("wrap", "push[center]push", "push[]25[]10[]10[]25[]push"));
         JLabel label = new JLabel("Change Password");
         label.setFont(new Font("sansserif", 1, 30));
-        label.setForeground(new Color(7, 164, 121));
+        label.setForeground(Application.dark_purple);
         this.add(label);
 
         MyTextField password = password1;
@@ -42,11 +43,11 @@ public class ChangePassword extends JPanel {
 
         MyButton okButton = okbutton;
         okButton.setText("Save");
-        okButton.setBackground(new Color(7, 164, 121));
+        okButton.setBackground(Application.turquoise);
         okButton.setForeground(new Color(250, 250, 250));
         MyButton cancelButton = cancelbutton;
         cancelButton.setText("Cancel");
-        cancelButton.setBackground(new Color(7, 164, 121));
+        cancelButton.setBackground(Application.turquoise);
         cancelButton.setForeground(new Color(250, 250, 250));
 
         this.add(okButton, "split 2, grow, left");

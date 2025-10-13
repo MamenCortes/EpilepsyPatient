@@ -23,8 +23,8 @@ public class MyButton extends JButton {
     //private final Color backgroundColor = Application.light_purple;
     //private final Color foregroundColor = Application.dark_purple;
 
-    private final Color backgroundColor = Application.darker_purple;
-    private final Color foregroundColor = Application.light_purple;
+    private final Color backgroundColor = Application.light_purple;
+    private final Color foregroundColor = Application.darker_purple;
 
 
     private ImageIcon image;

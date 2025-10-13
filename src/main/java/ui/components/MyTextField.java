@@ -1,5 +1,7 @@
 package ui.components;
 
+import ui.Application;
+
 import java.awt.Color;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
@@ -17,7 +19,11 @@ public class MyTextField extends JTextField{
     private Icon prefixIcon;
     private Icon suffixIcon;
     private String hint = "";
-    private Color backgroundColor = new Color(230, 245, 241);
+    //private Color backgroundColor = new Color(230, 245, 241);
+    private Color backgroundColor = Application.lighter_turquoise;
+    //private Color backgroundColor = Application.light_purple;
+    private Color selectionColor;
+    private Color contentColor = Application.darker_turquoise;
 
     public String getHint() {
         return hint;
@@ -48,7 +54,8 @@ public class MyTextField extends JTextField{
     public MyTextField() {
         setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
         setBackground(new Color(0, 0, 0, 0));
-        setForeground(Color.decode("#7A8C8D"));
+        //setForeground(Color.decode("#7A8C8D"));
+        setForeground(contentColor);
         setFont(new java.awt.Font("sansserif", 0, 13));
         setSelectionColor(new Color(75, 175, 152));
         setDisabledTextColor(Color.decode("#7A8C8D").darker());
@@ -57,7 +64,8 @@ public class MyTextField extends JTextField{
     public MyTextField(String hint) {
         setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
         setBackground(new Color(0, 0, 0, 0));
-        setForeground(Color.decode("#7A8C8D"));
+        //setForeground(Color.decode("#7A8C8D"));
+        setForeground(contentColor);
         setFont(new java.awt.Font("sansserif", 0, 13));
         setHint(hint);
         setSelectionColor(new Color(75, 175, 152));

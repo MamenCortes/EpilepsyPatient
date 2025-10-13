@@ -2,10 +2,8 @@ package ui;
 
 import ui.components.MenuTemplate;
 import ui.components.MyButton;
-import ui.components.PanelCoverLogIn;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionEvent;
 
 public class PatientMenu extends MenuTemplate {
@@ -57,12 +55,20 @@ public class PatientMenu extends MenuTemplate {
         logOutButton = new MyButton("Log Out", Application.darker_purple, Color.white);*/
 
         //ALL BLUE
-        seePatientDetails = new MyButton("See My Details", Application.turquoise, Color.white);
+        /*seePatientDetails = new MyButton("See My Details", Application.turquoise, Color.white);
         seeDoctorInfo = new MyButton("My Physician", Application.turquoise, Color.white);
         seeReportHistory = new MyButton("Report History",Application.turquoise, Color.white);
         connectBitalino = new MyButton("Connect Bitalino", Application.turquoise, Color.white);
         recordBitalino = new MyButton("New Recording", Application.turquoise, Color.white);
-        logOutButton = new MyButton("Log Out", Application.turquoise, Color.white);
+        logOutButton = new MyButton("Log Out", Application.turquoise, Color.white);*/
+
+        //Default color: light purple
+        seePatientDetails = new MyButton("See My Details");
+        seeDoctorInfo = new MyButton("My Physician");
+        seeReportHistory = new MyButton("Report History");
+        connectBitalino = new MyButton("Connect Bitalino");
+        recordBitalino = new MyButton("New Recording");
+        logOutButton = new MyButton("Log Out");
 
 
         buttons.add(seePatientDetails);

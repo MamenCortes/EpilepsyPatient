@@ -10,14 +10,18 @@ public class Application extends JFrame {
     private ArrayList<JPanel> appPanels;
     private UserLogIn logInPanel;
     private PatientMenu patientMenu;
-    public static Color darker_purple = new Color(114, 82, 153);
-    public static Color dark_purple = new Color(170, 84, 204);
-    public static Color pink = new Color(226, 169, 241);
+    //#022E57
+    public static Color darker_purple = new Color(114, 82, 153); //#725299
+    public static Color dark_purple = new Color(170, 84, 204); //#AA54CC
+    public static Color pink = new Color(226, 169, 241); //#E2A9F1
     public static Color purple = new Color(196, 158, 207);
-    public static Color turquoise = new Color(94, 186, 176);
-    public static Color light_purple = new Color(239, 232, 255);
-    public static Color light_turquoise = new Color(193, 252, 244);
-    public static Color dark_turquoise = new Color(73, 129, 122);
+    public static Color turquoise = new Color(94, 186, 176); //#5EBAB0
+    public static Color light_purple = new Color(239, 232, 255); //#EFE8FF
+    public static Color light_turquoise = new Color(193, 252, 244); //#C1FCF4
+    //public static Color light_turquoise = new Color(213, 242, 236); //#d5f2ec
+    public static Color lighter_turquoise = new Color(243, 250, 249);//#f3faf9
+    public static Color darker_turquoise = new Color(73, 129, 122);
+    public static Color dark_turquoise = new Color(52, 152, 143); //#34988f
     public static void main(String[] args) {
         Application app = new Application();
         app.setVisible(true);

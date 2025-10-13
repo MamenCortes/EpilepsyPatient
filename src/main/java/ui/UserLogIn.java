@@ -1,36 +1,26 @@
 package ui;
 
-import java.awt.Color;
-import java.awt.Dimension;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-
-import javax.swing.JPanel;
+import javax.swing.*;
 
 import net.miginfocom.swing.MigLayout;
 //import urgency.db.jpa.JPAUserManager;
 //import urgency.db.pojos.Role;
 //import urgency.db.pojos.User;
-import ui.components.ChangePassword;
-import ui.components.MyButton;
-import ui.components.MyComboBox;
-import ui.components.MyTextField;
-import ui.components.PanelCoverLogIn;
-import ui.components.PanelLoginAndRegister;
+import ui.components.*;
 
 public class UserLogIn extends JPanel implements ActionListener{
+    //TODO: revisar si hace falta o no una clase a parte para el cover o si podemos hacer los JFrames aquí directamente
 
     private static final long serialVersionUID = 1L;
-    private PanelCoverLogIn panelCoverLogIn;
-    private PanelLoginAndRegister panelLogIn;
+    //private PanelCoverLogIn panelCoverLogIn;
+    private JPanel panelLogIn;
     private MyButton applyLogIn;
-    private MyButton applyRegister;
-    private MyButton changePanels;
     private MyButton changePassword;
     private Application appMenu;
     private MyTextField emailTxF;
@@ -38,6 +28,9 @@ public class UserLogIn extends JPanel implements ActionListener{
     private MyTextField emailTxFLogIn;
     private MyTextField passwordTxFLogIn;
     private MyComboBox<String> roleCB;
+    private JPanel coverPanel;
+    private JLabel errorMessage;
+    private JLabel errorMessage2;
 
     /**
      * Create the panel.
@@ -53,10 +46,6 @@ public class UserLogIn extends JPanel implements ActionListener{
         //Initialize buttons
         applyLogIn = new MyButton();
         applyLogIn.addActionListener(this);
-        applyRegister = new MyButton();
-        applyRegister.addActionListener(this);
-        changePanels = new MyButton();
-        changePanels.addActionListener(this);
         changePassword = new MyButton();
         changePassword.addActionListener(this);
 
@@ -71,50 +60,94 @@ public class UserLogIn extends JPanel implements ActionListener{
         roleCB = new MyComboBox<String>();
         roleCB.addActionListener(this);
         //roleCB.addItem("Doctor");
-        roleCB.addItem("Recepcionist");
-        roleCB.addItem("Nurse");
-        roleCB.addItem("Manager");
+        roleCB.addItem("Patient");
+        roleCB.addItem("Doctor");
+        roleCB.addItem("Administrator");
 
-        panelCoverLogIn = new PanelCoverLogIn(changePanels);
-        panelLogIn = new PanelLoginAndRegister(applyLogIn, applyRegister, changePassword,
-                emailTxF, passwordTxF, roleCB, emailTxFLogIn, passwordTxFLogIn);
+        //Log In panel
+        errorMessage2 = new JLabel();
+        errorMessage = new JLabel();
+        panelLogIn = new JPanel();
+        panelLogIn.setOpaque(true);
+        initLogin();
+        //Cover panel
+        coverPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g); // pinta el fondo base
 
-        this.add(panelCoverLogIn, "grow");
+                Graphics2D g2d = (Graphics2D) g.create();
+                int width = getWidth();
+                int height = getHeight();
+
+                // 🔹 Degradado de izquierda a derecha (puedes cambiarlo a vertical si quieres)
+                GradientPaint gradient = new GradientPaint(0, 0, Application.light_purple, 0, getHeight(), Application.light_turquoise);
+
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, width, height);
+                g2d.dispose();
+            }
+        };
+        coverPanel.setOpaque(false);
+        coverPanel.setLayout(new MigLayout("wrap, fill", "[center]", "push[]10[]10[]push"));
+        JLabel picLabel = new JLabel();
+        picLabel.setIcon(new ImageIcon(UserLogIn.class.getResource("/icons/night_guardian_256.png")));
+        coverPanel.add(picLabel);
+
+        this.add(coverPanel, "grow");
         this.add(panelLogIn, "grow");
 
     }
 
-    private void showLogIn() {
-        System.out.println("Show Log IN");
-        panelLogIn.setLoginVisible(true);
-    }
-    private void showRegister() {
-        panelLogIn.setLoginVisible(false);
+
+    public void initLogin() {
+
+        panelLogIn.setBackground(Color.white);
+        panelLogIn.setLayout(new MigLayout("wrap", "push[center]push", "push[]25[]10[]10[][]15[]push"));
+        JLabel label = new JLabel("Sign In");
+        label.setFont(new Font("sansserif", 1, 30));
+        label.setForeground(Application.dark_purple);
+        panelLogIn.add(label);
+
+        //txtEmail = new MyTextField();
+        emailTxFLogIn.setPrefixIcon(new ImageIcon(getClass().getResource("/icons/mail.png")));
+        emailTxFLogIn.setHint("Email");
+        panelLogIn.add(emailTxFLogIn, "w 60%");
+        //MyPasswordField txtPass = new MyPasswordField();
+
+        //txtPass = new MyTextField();
+        passwordTxFLogIn.setPrefixIcon(new ImageIcon(getClass().getResource("/icons/pass.png")));
+        passwordTxFLogIn.setHint("Password");
+        panelLogIn.add(passwordTxFLogIn, "w 60%");
+
+        changePassword.setText("Forgot your password ?");
+        //cmdForget.setForeground(new Color(100, 100, 100));
+        changePassword.setFont(new Font("sansserif", 1, 12));
+        changePassword.setContentAreaFilled(false);
+        changePassword.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        panelLogIn.add(changePassword);
+
+        errorMessage2 = new JLabel();
+        errorMessage2.setFont(new Font("sansserif", Font.BOLD, 12));
+        errorMessage2.setForeground(Color.red);
+        errorMessage2.setText("Error message test");
+        errorMessage2.setVisible(false);
+        panelLogIn.add(errorMessage2);
+
+        applyLogIn.setText("LOG IN");
+        applyLogIn.setBackground(Application.turquoise);
+        applyLogIn.setForeground(Color.white);
+        applyLogIn.setUI(new StyledButtonUI());
+        panelLogIn.add(applyLogIn, "w 40%, h 40");
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if(e.getSource() == changePanels) {
-            panelLogIn.hideErrorMessage();
-            if(changePanels.getText()=="REGISTER") {
-                changePanels.setText("LOG IN");
-                showRegister();
-            }else {
-                changePanels.setText("REGISTER");
-                showLogIn();
-            }
-        }else if(e.getSource() == applyLogIn) {
+
+        if(e.getSource() == applyLogIn) {
             System.out.println("LogIn");
             if(logIn()) {
                 resetPanel();
-            }
-
-        }else if(e.getSource() == applyRegister) {
-            System.out.println("Register");
-            if(register()) {
-                resetPanel();
-                changePanels.setText("REGISTER");
-                showLogIn();
             }
 
         }else if(e.getSource() == changePassword) {
@@ -183,6 +216,7 @@ public class UserLogIn extends JPanel implements ActionListener{
     private Boolean logIn() {
         String email = emailTxFLogIn.getText();
         String password = passwordTxFLogIn.getText();
+        System.out.println("email: " + email+" password: "+password);
         if(!email.isBlank() && !password.isBlank()) {
 
             appMenu.changeToPatientMenu();
@@ -213,29 +247,10 @@ public class UserLogIn extends JPanel implements ActionListener{
         if(roleCB.getModel().getSelectedItem() != "Select your role...") {
             roleText = roleCB.getModel().getSelectedItem().toString();
         }else {
-            panelLogIn.showErrorMessage("Select a role");
+            showErrorMessage("Select a role");
             return false;
         }
 
-        //Register a user
-        /*try {
-            Role role = appMenu.jpaRoleMan.getRole(roleText);
-            System.out.println("Password valid = "+validatePassword(password));
-            if(validateEmail(email) && validatePassword(password)) {
-                if(appMenu.jpaUserMan.register(new User(email, password, role))) {
-                    return true;
-                }else {
-                    showErrorMessage("User already exists");
-                    return false;
-                }
-            }else {
-                return false;
-            }
-
-        } catch (NoSuchAlgorithmException e) {
-            showErrorMessage("Invalid password");
-            return false;
-        }*/
         return true;
     }
 
@@ -281,18 +296,12 @@ public class UserLogIn extends JPanel implements ActionListener{
 
     }
 
-
-
-    private void showErrorMessage(String text) {
-        panelLogIn.showErrorMessage(text);
-    }
-
     private void resetPanel() {
         emailTxF.setText(null);
         emailTxFLogIn.setText(null);
         passwordTxF.setText(null);
         passwordTxFLogIn.setText(null);
-        panelLogIn.hideErrorMessage();
+        hideErrorMessage();
     }
 
     public Boolean validateEmail(String email) {
@@ -305,6 +314,18 @@ public class UserLogIn extends JPanel implements ActionListener{
         //System.out.println("Valid email? "+validEmail);
         showErrorMessage("Invalid Email");
         return false;
+    }
+
+    public void showErrorMessage(String text){
+        errorMessage.setVisible(true);
+        errorMessage.setText(text);
+        errorMessage2.setVisible(true);
+        errorMessage2.setText(text);
+    }
+
+    public void hideErrorMessage() {
+        errorMessage.setVisible(false);
+        errorMessage2.setVisible(false);
     }
 
 }
