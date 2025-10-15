@@ -1,10 +1,11 @@
 package ui;
 
+import model.Doctor;
+import model.ModelManager;
 import net.miginfocom.swing.MigLayout;
 import ui.components.MyButton;
 import ui.components.MyComboBox;
 import ui.components.MyTextField;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -43,11 +44,13 @@ public class DoctorInfo extends JPanel implements ActionListener {
     private final Font contentFont = new Font("sansserif", 1, 12);
     private final Color contentColor = Application.dark_turquoise;
 
+    private Doctor doctor;
 
 
     //private JDateChooser birthDate;
     public DoctorInfo(Application appMain) {
         this.appMain = appMain;
+        doctor = Application.doctor;
         initDoctorInfo();
 
     }
@@ -58,24 +61,28 @@ public class DoctorInfo extends JPanel implements ActionListener {
         //Initialize values
         //TODO: replace with actual doctor values
         name = new MyTextField();
-        name.setText("Dr. Michal Al-Hajjar");
+        //name.setText("Dr. Michal Al-Hajjar");
+        name.setText(doctor.getName() + " " + doctor.getSurname());
         name.setEnabled(false); //Doesnt allow editing
         email = new MyTextField();
-        email.setText("michal.alhajjar@gmail.com");
+        //email.setText("michal.alhajjar@gmail.com");
+        email.setText(doctor.getEmail());
         email.setEnabled(false);
         phoneNumber = new MyTextField();
-        phoneNumber.setText("123456789");
+        //phoneNumber.setText("123456789");
+        phoneNumber.setText(Integer.toString(doctor.getPhone()));
         phoneNumber.setEnabled(false);
         speciality = new MyTextField();
         speciality.setText("Neurologist | Epilepsy Specialist ");
         speciality.setEnabled(false);
         office = new MyTextField();
-        office.setText(
+        /*office.setText(
                 "Hospital General Universitario Gregorio Marañón\n" +
                 "\n" +
                 "C/ Doctor Esquerdo, 46\n" +
                 "\n" +
-                "28007 Madrid1");
+                "28007 Madrid1");*/
+        office.setText(doctor.getAddress());
         office.setEnabled(false);
         formContainer = new JPanel();
         initDoctorForm();

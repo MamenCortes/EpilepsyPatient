@@ -11,11 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import model.ModelManager;
+import model.Report;
 import net.miginfocom.swing.MigLayout;
 import ui.components.MyButton;
 import ui.components.MyTextField;
 import ui.components.ReportCell;
-
 import javax.swing.*;
 
 public class ReportsHistory extends JPanel implements ActionListener, MouseListener {
@@ -36,13 +37,13 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
     protected JLabel errorMessage;
     protected MyButton goBackButton;
     //protected Application appMain;
-    protected JList<String> reportsList;
-    protected DefaultListModel<String> reportsDefListModel;
+    protected JList<Report> reportsList;
+    protected DefaultListModel<Report> reportsDefListModel;
 
     public ReportsHistory(Application appMain) {
         this.appMain = appMain;
         initMainPanel();
-        showReports(generateReports());
+        showReports(ModelManager.generateRandomReports());
         //showPatients(null);
     }
 
@@ -89,31 +90,20 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
         searchByTextField.setHint("YYYY-MM-DD");
         add(searchByTextField, "cell 0 2 2 1, alignx center, grow");
 
-        //cancelButton = new MyButton("CANCEL", Application.turquoise, Color.white);
         cancelButton = new MyButton("CANCEL");
-        //cancelButton.setBackground(new Color(7, 164, 121));
-        //cancelButton.setForeground(new Color(250, 250, 250));
         cancelButton.addActionListener(this);
         add(cancelButton, "cell 0 3, left, gapy 5, grow");
 
-        //searchButton = new MyButton("SEARCH", Application.turquoise, Color.white);
         searchButton = new MyButton("SEARCH");
-        //searchButton.setBackground(new Color(7, 164, 121));
-        //searchButton.setForeground(new Color(250, 250, 250));
         searchButton.addActionListener(this);
         add(searchButton, "cell 1 3, right, gapy 5, grow");
 
-        //openFormButton = new MyButton("OPEN FILE", Application.turquoise, Color.white);
         openFormButton = new MyButton("OPEN FILE");
-        //openFormButton.setBackground(new Color(7, 164, 121));
-        //openFormButton.setForeground(new Color(250, 250, 250));
         openFormButton.addActionListener(this);
         add(openFormButton, "cell 0 4, center, gapy 5, span 2, grow");
         openFormButton.setVisible(false);
 
         goBackButton = new MyButton("BACK TO MENU", Application.turquoise, Color.white);
-        //goBackButton.setBackground(new Color(7, 164, 121));
-        //goBackButton.setForeground(new Color(250, 250, 250));
         goBackButton.addActionListener(this);
         add(goBackButton, "cell 0 7, center, gapy 5, span 2, grow");
         goBackButton.setVisible(true);
@@ -129,7 +119,7 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
         //showDoctors(createRandomDoctors());
     }
 
-    protected void showReports(List<String> reports) {
+    protected void showReports(List<Report> reports) {
 
         //JPanel gridPanel = new JPanel(new GridLayout(patients.size(), 0));
         JScrollPane scrollPane1 = new JScrollPane();
@@ -137,16 +127,15 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
         scrollPane1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         //scrollPane1.setViewportView(gridPanel);
 
-        reportsDefListModel = new DefaultListModel<>();
+        reportsDefListModel = new DefaultListModel<Report>();
         if(reports != null) {
-            for (String r : reports) {
+            for (Report r : reports) {
                 reportsDefListModel.addElement(r);
 
             }
         }
 
-
-        reportsList = new JList<String>(reportsDefListModel);
+        reportsList = new JList<Report>(reportsDefListModel);
         reportsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         reportsList.setCellRenderer(new ReportCell());
         reportsList.addMouseListener(this);

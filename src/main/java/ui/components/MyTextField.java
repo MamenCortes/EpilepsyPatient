@@ -19,7 +19,6 @@ public class MyTextField extends JTextField{
     private Icon prefixIcon;
     private Icon suffixIcon;
     private String hint = "";
-    //private Color backgroundColor = new Color(230, 245, 241);
     private Color backgroundColor = Application.lighter_turquoise;
     //private Color backgroundColor = Application.light_purple;
     private Color selectionColor;

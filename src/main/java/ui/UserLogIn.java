@@ -3,15 +3,11 @@ package ui;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 
 import javax.swing.*;
 
 import net.miginfocom.swing.MigLayout;
-//import urgency.db.jpa.JPAUserManager;
-//import urgency.db.pojos.Role;
-//import urgency.db.pojos.User;
 import ui.components.*;
 
 public class UserLogIn extends JPanel implements ActionListener{
@@ -240,19 +236,6 @@ public class UserLogIn extends JPanel implements ActionListener{
         }
     }
 
-    private Boolean register() {
-        String email = emailTxF.getText();
-        String password = passwordTxF.getText();
-        String roleText = "";
-        if(roleCB.getModel().getSelectedItem() != "Select your role...") {
-            roleText = roleCB.getModel().getSelectedItem().toString();
-        }else {
-            showErrorMessage("Select a role");
-            return false;
-        }
-
-        return true;
-    }
 
     public Boolean canChangePassword() {
         String email = emailTxFLogIn.getText();

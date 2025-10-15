@@ -1,5 +1,6 @@
 package ui;
 
+import model.Patient;
 import net.miginfocom.swing.MigLayout;
 import ui.components.MyButton;
 import ui.components.MyComboBox;
@@ -39,19 +40,18 @@ public class PatientInfo extends JPanel implements ActionListener {
 
 
     //Format variables: Color and Font
-    //private final Color titleColor2 = new Color(24, 116, 67);
-    //private final Color titleColor = new Color(7, 164, 121);
-    //private final Color contentColor = new Color(24, 116, 67);
     private final Color titleColor = Application.dark_purple;
     private final Font titleFont = new Font("sansserif", Font.BOLD, 25);
     private final Font contentFont = new Font("sansserif", 1, 12);
     private final Color contentColor = Application.dark_turquoise;
     private Color textFieldBg = new Color(230, 245, 241);
 
+    private Patient patient;
 
     //private JDateChooser birthDate;
     public PatientInfo(Application appMain) {
         this.appMain = appMain;
+        patient = Application.patient;
         initPatientInfo();
 
     }
@@ -62,22 +62,28 @@ public class PatientInfo extends JPanel implements ActionListener {
         //Initialize values
         //TODO: replace with actual patient values
         name = new MyTextField();
-        name.setText("Jane");
+        //name.setText("Jane");
+        name.setText(patient.getName());
         name.setEnabled(false); //Doesnt allow editing
         surname = new MyTextField();
-        surname.setText("Doe");
+        //surname.setText("Doe");
+        surname.setText(patient.getSurname());
         surname.setEnabled(false);
         email = new MyTextField();
-        email.setText("jane.doe@gmail.com");
+        //email.setText("jane.doe@gmail.com");
+        email.setText(patient.getEmail());
         email.setEnabled(false);
         phoneNumber = new MyTextField();
-        phoneNumber.setText("123456789");
+        //phoneNumber.setText("123456789");
+        phoneNumber.setText(Integer.toString(patient.getPhone()));
         phoneNumber.setEnabled(false);
         sex = new MyTextField();
-        sex.setText("Non Binary");
+        //sex.setText("Non Binary");
+        sex.setText(patient.getSex());
         sex.setEnabled(false);
         birthDate = new MyTextField();
-        birthDate.setText("1999-11-11");
+        //birthDate.setText("1999-11-11");
+        birthDate.setText(patient.getDateOfBirth());
         birthDate.setEnabled(false);
         formContainer = new JPanel();
         initPatientForm();

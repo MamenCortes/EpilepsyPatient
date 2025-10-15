@@ -2,7 +2,6 @@ package ui;
 
 import ui.components.MenuTemplate;
 import ui.components.MyButton;
-
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 
@@ -37,31 +36,6 @@ public class PatientMenu extends MenuTemplate {
     }
 
     private void addButtons() {
-        //TODO: set color of buttons
-        //ALL PURPLE
-        /*seePatientDetails = new MyButton("See My Details", Application.darker_purple, Color.white);
-        seeDoctorInfo = new MyButton("My Physician", Application.turquoise, Color.white);
-        seeReportHistory = new MyButton("Report History",Application.darker_purple, Color.white);
-        connectBitalino = new MyButton("Connect Bitalino", Application.turquoise, Color.white);
-        recordBitalino = new MyButton("New Recording", Application.darker_purple, Color.white);
-        logOutButton = new MyButton("Log Out", Application.turquoise, Color.white);*/
-
-        //PURPLE AND BLUE
-        /*seePatientDetails = new MyButton("See My Details", Application.darker_purple, Color.white);
-        seeDoctorInfo = new MyButton("My Physician", Application.darker_purple, Color.white);
-        seeReportHistory = new MyButton("Report History",Application.darker_purple, Color.white);
-        connectBitalino = new MyButton("Connect Bitalino", Application.darker_purple, Color.white);
-        recordBitalino = new MyButton("New Recording", Application.darker_purple, Color.white);
-        logOutButton = new MyButton("Log Out", Application.darker_purple, Color.white);*/
-
-        //ALL BLUE
-        /*seePatientDetails = new MyButton("See My Details", Application.turquoise, Color.white);
-        seeDoctorInfo = new MyButton("My Physician", Application.turquoise, Color.white);
-        seeReportHistory = new MyButton("Report History",Application.turquoise, Color.white);
-        connectBitalino = new MyButton("Connect Bitalino", Application.turquoise, Color.white);
-        recordBitalino = new MyButton("New Recording", Application.turquoise, Color.white);
-        logOutButton = new MyButton("Log Out", Application.turquoise, Color.white);*/
-
         //Default color: light purple
         seePatientDetails = new MyButton("See My Details");
         seeDoctorInfo = new MyButton("My Physician");

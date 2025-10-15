@@ -17,6 +17,7 @@ public class PanelMenu extends JPanel {
     private String stringColumns = "[][][]";
     private Integer numColumns = 3;
 
+
     public PanelMenu(ArrayList<JButton> buttons) {
         //this.buttons = buttons; 
         this.numButtons = buttons.size();

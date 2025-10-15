@@ -17,11 +17,6 @@ import java.awt.image.BufferedImage;
 public class MyButton extends JButton {
 
     private static final long serialVersionUID = 5848952178038888829L;
-    //private final Color backgroundColor = new Color(0xE6F1F4);
-    //private final Color foregroundColor = new Color(35, 166, 97);
-
-    //private final Color backgroundColor = Application.light_purple;
-    //private final Color foregroundColor = Application.dark_purple;
 
     private final Color backgroundColor = Application.light_purple;
     private final Color foregroundColor = Application.darker_purple;

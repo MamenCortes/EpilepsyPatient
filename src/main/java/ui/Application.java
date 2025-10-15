@@ -1,4 +1,8 @@
 package ui;
+import model.Doctor;
+import model.ModelManager;
+import model.Patient;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -27,6 +31,10 @@ public class Application extends JFrame {
         app.setVisible(true);
     }
 
+    //Model values
+    public static Patient patient;
+    public static Doctor doctor;
+
     public Application() {
         appPanels = new ArrayList<JPanel>();
         initComponents();
@@ -36,6 +44,10 @@ public class Application extends JFrame {
         appPanels.add(logInPanel);
         logInPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
         //setContentPane(logInPanel);
+        patient = ModelManager.generateRandomPatient();
+        System.out.println(patient);
+        doctor = ModelManager.generateRandomDoctor();
+        System.out.println(doctor);
         changeToPatientMenu();
     }
 
