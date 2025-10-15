@@ -1,7 +1,7 @@
 package ui.components;
 
 import net.miginfocom.swing.MigLayout;
-import ui.Application;
+import ui.windows.Application;
 import model.Report;
 import javax.swing.*;
 import javax.swing.border.Border;

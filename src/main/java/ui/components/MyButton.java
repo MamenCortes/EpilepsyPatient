@@ -1,6 +1,6 @@
 package ui.components;
 
-import ui.Application;
+import ui.windows.Application;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;

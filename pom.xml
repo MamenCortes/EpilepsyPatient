@@ -24,6 +24,18 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.15.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.5.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.miglayout</groupId>
+            <artifactId>miglayout-swing</artifactId>
+            <version>11.0</version>
+        </dependency>
+
     </dependencies>
+
 
 </project>

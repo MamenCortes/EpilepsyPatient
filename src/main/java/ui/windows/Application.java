@@ -1,4 +1,4 @@
-package ui;
+package ui.windows;
 import model.Doctor;
 import model.ModelManager;
 import model.Patient;
