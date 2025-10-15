@@ -21,7 +21,9 @@ public class BitalinoDemo {
             System.out.println(devices);
 
             //You need TO CHANGE THE MAC ADDRESS
-            String macAddress = "20:16:02:14:75:76";
+            //String macAddress = "20:16:02:14:75:76";
+            String macAddress = "98:D3:51:FD:9C:ED";
+            //TODO: permitir al usuario que introduza el MAC Address
             int SamplingRate = 10;
             bitalino.open(macAddress, SamplingRate);
 
