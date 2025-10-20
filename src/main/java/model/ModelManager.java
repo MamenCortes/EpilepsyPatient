@@ -61,59 +61,53 @@ public class ModelManager {
         return doctor;
     }
 
-    public static ArrayList<Report> generateRandomReports() {
-        String[] POSSIBLE_SYMPTOMS = {"Fever", "Cough", "Headache", "Fatigue", "Nausea"};
-        String[] POSSIBLE_STATES = {"Normal", "Abnormal", "Elevated"};
+    public static ArrayList<SignalRecording> generateRandomSignalRecordings() {
         Random random = new Random();
-        ArrayList<Report> reports = new ArrayList<>();
-        // Step 1: Generate a common date and create at least one Symptoms and one Signal with it
+        ArrayList<SignalRecording> signalReports = new ArrayList<>();
+        //ArrayList<Report> patientReports = new ArrayList<>();
+        // Step 1: Generate a common date and create at least one Signal with it
         String commonDate = generateRandomDate(random);  // Generate a random date to share
-        Symptoms sharedSymptoms = new Symptoms();
-            sharedSymptoms.setDate(commonDate);
-        int numSymptoms = 1 + random.nextInt(4);  // 1 to 4 symptoms
-            for (int i = 0; i < numSymptoms; i++) {
-            sharedSymptoms.addSymptom(POSSIBLE_SYMPTOMS[random.nextInt(POSSIBLE_SYMPTOMS.length)]);
-        }
-            reports.add(sharedSymptoms);
-        Signal sharedSignal = new Signal();
-            sharedSignal.setDate(commonDate);  // Same date as sharedSymptoms
-            sharedSignal.setComments("Random comments for shared signal");
-            sharedSignal.setSamplingFrequency(50 + random.nextInt(151));  // 50 to 200
-            sharedSignal.setECG(POSSIBLE_STATES[random.nextInt(POSSIBLE_STATES.length)]);
-            sharedSignal.setACC(POSSIBLE_STATES[random.nextInt(POSSIBLE_STATES.length)]);
-            sharedSignal.setTimeStamp("14:30:00");  // Fixed timestamp for simplicity, or you can randomize
-            reports.add(sharedSignal);
+
+        SignalRecording sharedReport = new SignalRecording();
+            sharedReport.setDate(commonDate);  // Same date as sharedSymptoms
+            sharedReport.setComments("Random comments for shared signal");
+            sharedReport.setSamplingFrequency(50 + random.nextInt(151));  // 50 to 200
+            signalReports.add(sharedReport);
         // Step 2: Generate additional reports with random dates
         int additionalReports = 3 + random.nextInt(6);  // 3 to 8 more reports
-                for (int i = 0; i < additionalReports; i++) {
-            if (random.nextBoolean()) {  // Randomly choose Symptoms
-                Symptoms sym = new Symptoms();
-                sym.setDate(generateRandomDate(random));  // Random date
-                int numSym = 1 + random.nextInt(4);  // 1 to 4 symptoms
-                for (int j = 0; j < numSym; j++) {
-                    sym.addSymptom(POSSIBLE_SYMPTOMS[random.nextInt(POSSIBLE_SYMPTOMS.length)]);
-                }
-                reports.add(sym);
-            } else {  // Randomly choose Signal
-                Signal sig = new Signal();
-                sig.setDate(generateRandomDate(random));  // Random date
-                sig.setComments("Random comments " + i);
-                sig.setSamplingFrequency(50 + random.nextInt(151));  // 50 to 200
-                sig.setECG(POSSIBLE_STATES[random.nextInt(POSSIBLE_STATES.length)]);
-                sig.setACC(POSSIBLE_STATES[random.nextInt(POSSIBLE_STATES.length)]);
-                sig.setTimeStamp("12:00:00");  // Fixed, or randomize if needed
-                reports.add(sig);
-            }
+
+        for (int i = 0; i < additionalReports; i++) {
+            SignalRecording sig = new SignalRecording();
+            sig.setDate(generateRandomDate(random));  // Random date
+            sig.setComments("Random comments " + i);
+            sig.setSamplingFrequency(50 + random.nextInt(151));  // 50 to 200
+            signalReports.add(sig);
         }
-        return reports;  // Return the list of Reports
+        return signalReports;  // Return the list of Reports*/
+    }
+
+    public static ArrayList<SymptomReport> generateRandomSymptomReports() {
+        Random random = new Random();
+        ArrayList<SymptomReport> signalReports = new ArrayList<>();
+        //int numSymptoms = 1 + random.nextInt(15);  // 1 to 15 symptoms
+        int numSymptoms = 15;
+
+        for (int i = 0; i < numSymptoms; i++) {// Randomly choose Symptoms
+            SymptomReport sym = new SymptomReport();
+            sym.setDate(generateRandomDate(random));  // Random date
+            sym.setSymptomType(SymptomType.values()[random.nextInt(SymptomType.values().length)]);
+            signalReports.add(sym);
+        }
+        return signalReports;  // Return the list of Reports*/
     }
 
     // Helper method to generate a random date in "YYYY-MM-DD" format
     private static String generateRandomDate(Random random) {
-        int year = 2000 + random.nextInt(24);  // 2000 to 2023
+        //int year = 2000 + random.nextInt(24);  // 2000 to 2023
+        int year = 2025;
         int month = 1 + random.nextInt(12);    // 1 to 12
         int day = 1 + random.nextInt(28);      // 1 to 28 to avoid invalid dates
-        return String.format("%04d-%02d-%02d", year, month, day);
+        return String.format("%02d/%02d/%04d", day, month, year);
     }
 
     public static void main(String[] args) {
@@ -122,9 +116,9 @@ public class ModelManager {
         System.out.println(randomPatient);
         System.out.println(randomDoctor);// Prints the generated Patient object
 
-        ArrayList<Report> randomReports = generateRandomReports();
+        /*ArrayList<Report> randomReports = generateRandomReports();
         for (Report report : randomReports) {
             System.out.println(report);  // Prints each report using its toString method
-        }
+        }*/
     }
 }

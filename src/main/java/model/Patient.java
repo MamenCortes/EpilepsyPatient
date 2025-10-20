@@ -10,8 +10,10 @@ public class Patient {
     private Integer phone;
     private String sex;
     private String dateOfBirth;
-    private ArrayList<Report> reports;
-    private ArrayList<Signal> signals;
+    private ArrayList<SignalRecording> signalRecordingsList;
+    private ArrayList<SymptomReport> symptomsList;
+
+
 
     public Patient(String name, String surname, String email, Integer phone, String sex, String dateOfBirth) {
         this.name = name;
@@ -20,8 +22,8 @@ public class Patient {
         this.phone = phone;
         this.sex = sex;
         this.dateOfBirth = dateOfBirth;
-        this.reports = new ArrayList<Report>();
-        this.signals = new ArrayList<Signal>();
+        this.signalRecordingsList = new ArrayList<SignalRecording>();
+        this.symptomsList = new ArrayList<SymptomReport>();
     }
 
     public Patient() {
@@ -31,8 +33,8 @@ public class Patient {
         this.phone = 123456789;
         this.sex = "NonBinary";
         this.dateOfBirth = "01-01-1999";
-        this.reports = new ArrayList<Report>();
-        this.signals = new ArrayList<Signal>();
+        this.signalRecordingsList = new ArrayList<SignalRecording>();
+        this.symptomsList = new ArrayList<SymptomReport>();
     }
 
     @Override
@@ -44,8 +46,8 @@ public class Patient {
                 ", phone=" + phone +
                 ", sex='" + sex + '\'' +
                 ", dateOfBirth='" + dateOfBirth + '\'' +
-                ", numReports='" + reports.size() + '\'' +
-                ", numSignals='" + signals.size() + '\'' +
+                ", numReports='" + signalRecordingsList.size() + '\'' +
+                ", numSymptoms='" + symptomsList.size() + '\'' +
                 '}';
     }
 
@@ -97,27 +99,27 @@ public class Patient {
         this.dateOfBirth = dateOfBirth;
     }
 
-    public ArrayList<Report> getReports() {
-        return reports;
+    public ArrayList<SignalRecording> getSignalRecordingsList() {
+        return signalRecordingsList;
     }
 
-    public void setReports(ArrayList<Report> reports) {
-        this.reports = reports;
+    public void setSignalRecordingsList(ArrayList<SignalRecording> signalRecordingsList) {
+        this.signalRecordingsList = signalRecordingsList;
     }
 
-    public ArrayList<Signal> getSignals() {
-        return signals;
+    public void addReport(SignalRecording recording) {
+        this.signalRecordingsList.add(recording);
     }
 
-    public void setSignals(ArrayList<Signal> signals) {
-        this.signals = signals;
+    public ArrayList<SymptomReport> getSymptomsList() {
+        return symptomsList;
     }
 
-    public void addReport(Report report) {
-        this.reports.add(report);
+    public void setSymptomsList(ArrayList<SymptomReport> symptomsList) {
+        this.symptomsList = symptomsList;
+    }
+    public void addSymptom(SymptomReport symptom) {
+        this.symptomsList.add(symptom);
     }
 
-    public void addSignal(Signal signal) {
-        this.signals.add(signal);
-    }
 }

@@ -12,21 +12,23 @@ import java.util.List;
 import java.util.Random;
 
 import model.ModelManager;
-import model.Report;
+import model.SignalRecording;
+import model.SymptomReport;
 import net.miginfocom.swing.MigLayout;
 import ui.components.MyButton;
 import ui.components.MyTextField;
-import ui.components.ReportCell;
+import ui.components.RecordingCell;
+
 import javax.swing.*;
 
-public class ReportsHistory extends JPanel implements ActionListener, MouseListener {
+public class RecordingsHistory extends JPanel implements ActionListener, MouseListener {
 
     private static final long serialVersionUID = -2213334704230710767L;
     private Application appMain;
     protected final Font titleFont = new Font("sansserif", 3, 15);
     protected final Color titleColor = Application.dark_purple;
     protected JLabel title;
-    protected String titleText = " Reports History";
+    protected String titleText = " Recordings History";
     protected ImageIcon icon  = new ImageIcon(getClass().getResource("/icons/search-report64_2.png"));
     protected JScrollPane scrollPane1;
     protected String searchText = "Search By Date";
@@ -37,13 +39,13 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
     protected JLabel errorMessage;
     protected MyButton goBackButton;
     //protected Application appMain;
-    protected JList<Report> reportsList;
-    protected DefaultListModel<Report> reportsDefListModel;
+    protected JList<SignalRecording> reportsList;
+    protected DefaultListModel<SignalRecording> recordingsDefListModel;
 
-    public ReportsHistory(Application appMain) {
+    public RecordingsHistory(Application appMain) {
         this.appMain = appMain;
         initMainPanel();
-        showReports(ModelManager.generateRandomReports());
+        showReports(ModelManager.generateRandomSignalRecordings());
         //showPatients(null);
     }
 
@@ -119,7 +121,7 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
         //showDoctors(createRandomDoctors());
     }
 
-    protected void showReports(List<Report> reports) {
+    protected void showReports(List<SignalRecording> recordings) {
 
         //JPanel gridPanel = new JPanel(new GridLayout(patients.size(), 0));
         JScrollPane scrollPane1 = new JScrollPane();
@@ -127,23 +129,23 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
         scrollPane1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         //scrollPane1.setViewportView(gridPanel);
 
-        reportsDefListModel = new DefaultListModel<Report>();
-        if(reports != null) {
-            for (Report r : reports) {
-                reportsDefListModel.addElement(r);
+        recordingsDefListModel = new DefaultListModel<SignalRecording>();
+        if (recordings != null) {
+            for (SignalRecording r : recordings) {
+                recordingsDefListModel.addElement(r);
 
             }
         }
 
-        reportsList = new JList<Report>(reportsDefListModel);
+        reportsList = new JList<SignalRecording>(recordingsDefListModel);
         reportsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        reportsList.setCellRenderer(new ReportCell());
+        reportsList.setCellRenderer(new RecordingCell());
         reportsList.addMouseListener(this);
         scrollPane1.setViewportView(reportsList);
 
         scrollPane1.setPreferredSize(this.getPreferredSize());
 
-        add(scrollPane1,  "cell 2 1 2 6, grow, gap 10");
+        add(scrollPane1, "cell 2 1 2 6, grow, gap 10");
     }
 
 
