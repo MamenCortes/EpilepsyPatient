@@ -2,7 +2,7 @@ package ceu.biolab.sendSerialization;
 
 import java.io.Serializable;
 
-public class Client implements Serializable{
+public class Client implements Serializable{ //Classes must be serializable to be able to send them
 
     private static final long serialVersionUID = -6291904286218553733L;
 

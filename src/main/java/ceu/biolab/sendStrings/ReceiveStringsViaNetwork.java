@@ -12,20 +12,25 @@ public class ReceiveStringsViaNetwork {
 
     public static void main(String args[]) throws IOException {
 
+        //Commented: Single thread connection
         ServerSocket serverSocket = new ServerSocket(9009);
-        Socket socket = serverSocket.accept();
-        System.out.println("Connection client created");
-        BufferedReader bufferedReader = new BufferedReader(
-                new InputStreamReader(socket.getInputStream()));
-        System.out.println("Text Received:\n");
-        String line;
-        while ((line = bufferedReader.readLine()) != null) {
-            if (line.toLowerCase().contains("stop")) {
-                System.out.println("Stopping the server");
-                releaseResources(bufferedReader, socket, serverSocket);
-                System.exit(0);
+
+        while (true) { //add to make it accept sequential connections
+            Socket socket = serverSocket.accept();
+            System.out.println("Connection client created");
+            BufferedReader bufferedReader = new BufferedReader(
+                    new InputStreamReader(socket.getInputStream()));
+            System.out.println("Text Received:\n");
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                if (line.toLowerCase().contains("stop")) { //When we receive the stop, the conexion finishes
+                    break;
+                    //System.out.println("Stopping the server");
+                    //releaseResources(bufferedReader, socket, serverSocket);
+                    //System.exit(0);
+                }
+                System.out.println(line);
             }
-            System.out.println(line);
         }
     }
 
