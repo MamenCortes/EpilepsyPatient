@@ -11,7 +11,6 @@ import net.miginfocom.swing.MigLayout;
 import ui.components.*;
 
 public class UserLogIn extends JPanel implements ActionListener{
-    //TODO: revisar si hace falta o no una clase a parte para el cover o si podemos hacer los JFrames aquí directamente
 
     private static final long serialVersionUID = 1L;
     //private PanelCoverLogIn panelCoverLogIn;
