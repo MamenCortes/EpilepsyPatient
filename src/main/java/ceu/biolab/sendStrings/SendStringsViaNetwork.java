@@ -10,6 +10,7 @@ public class SendStringsViaNetwork {
 
     public static void main(String args[]) throws IOException {
         System.out.println("Starting Client...");
+        //Add IP instead of localhost to connect different devices
         Socket socket = new Socket("localhost", 9009);
         PrintWriter printWriter = new PrintWriter(socket.getOutputStream(), true);
         System.out.println("Connection established... sending text");

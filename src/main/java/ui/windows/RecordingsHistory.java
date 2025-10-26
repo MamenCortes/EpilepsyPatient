@@ -1,4 +1,4 @@
-package ui;
+package ui.windows;
 
 
 import java.awt.*;
@@ -11,23 +11,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import model.ModelManager;
+import model.SignalRecording;
+import model.SymptomReport;
 import net.miginfocom.swing.MigLayout;
 import ui.components.MyButton;
 import ui.components.MyTextField;
-import ui.components.ReportCell;
+import ui.components.RecordingCell;
 
 import javax.swing.*;
 
-public class ReportsHistory extends JPanel implements ActionListener, MouseListener {
+public class RecordingsHistory extends JPanel implements ActionListener, MouseListener {
 
     private static final long serialVersionUID = -2213334704230710767L;
     private Application appMain;
     protected final Font titleFont = new Font("sansserif", 3, 15);
-    //private final Color titleColor2 = new Color(24, 116, 67); //#187443
-    protected final Color titleColor = new Color(7, 164, 121);
+    protected final Color titleColor = Application.dark_purple;
     protected JLabel title;
-    protected String titleText = " Reports History";
-    protected ImageIcon icon  = new ImageIcon(getClass().getResource("/icons/search-report.png"));
+    protected String titleText = " Recordings History";
+    protected ImageIcon icon  = new ImageIcon(getClass().getResource("/icons/search-report64_2.png"));
     protected JScrollPane scrollPane1;
     protected String searchText = "Search By Date";
     protected MyTextField searchByTextField;
@@ -37,13 +39,13 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
     protected JLabel errorMessage;
     protected MyButton goBackButton;
     //protected Application appMain;
-    protected JList<String> reportsList;
-    protected DefaultListModel<String> reportsDefListModel;
+    protected JList<SignalRecording> reportsList;
+    protected DefaultListModel<SignalRecording> recordingsDefListModel;
 
-    public ReportsHistory(Application appMain) {
+    public RecordingsHistory(Application appMain) {
         this.appMain = appMain;
         initMainPanel();
-        showReports(generateReports());
+        showReports(ModelManager.generateRandomSignalRecordings());
         //showPatients(null);
     }
 
@@ -69,6 +71,7 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
 
     private void initMainPanel() {
         this.setLayout(new MigLayout("fill, inset 20, gap 0, wrap 3", "[grow 5]5[grow 5]5[grow 40][grow 40]", "[][][][][][][][][][]"));
+        this.setBackground(Color.white);
         //Add Title
         title = new JLabel(titleText);
         title.setHorizontalAlignment(SwingConstants.CENTER);
@@ -81,36 +84,28 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
         //Initialize search panel
         JLabel searchTitle = new JLabel(searchText);
         searchTitle.setFont(titleFont);
-        searchTitle.setForeground(titleColor);
+        searchTitle.setForeground(Application.darker_purple);
         add(searchTitle, "cell 0 1 2 1, alignx center, grow");
 
         searchByTextField = new MyTextField("ex. Doe...");
-        searchByTextField.setBackground(Color.white);
+        searchByTextField.setBackground(Application.lighter_turquoise);
         searchByTextField.setHint("YYYY-MM-DD");
         add(searchByTextField, "cell 0 2 2 1, alignx center, grow");
 
         cancelButton = new MyButton("CANCEL");
-        cancelButton.setBackground(new Color(7, 164, 121));
-        cancelButton.setForeground(new Color(250, 250, 250));
         cancelButton.addActionListener(this);
         add(cancelButton, "cell 0 3, left, gapy 5, grow");
 
         searchButton = new MyButton("SEARCH");
-        searchButton.setBackground(new Color(7, 164, 121));
-        searchButton.setForeground(new Color(250, 250, 250));
         searchButton.addActionListener(this);
         add(searchButton, "cell 1 3, right, gapy 5, grow");
 
         openFormButton = new MyButton("OPEN FILE");
-        openFormButton.setBackground(new Color(7, 164, 121));
-        openFormButton.setForeground(new Color(250, 250, 250));
         openFormButton.addActionListener(this);
         add(openFormButton, "cell 0 4, center, gapy 5, span 2, grow");
         openFormButton.setVisible(false);
 
-        goBackButton = new MyButton("BACK TO MENU");
-        goBackButton.setBackground(new Color(7, 164, 121));
-        goBackButton.setForeground(new Color(250, 250, 250));
+        goBackButton = new MyButton("BACK TO MENU", Application.turquoise, Color.white);
         goBackButton.addActionListener(this);
         add(goBackButton, "cell 0 7, center, gapy 5, span 2, grow");
         goBackButton.setVisible(true);
@@ -126,7 +121,7 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
         //showDoctors(createRandomDoctors());
     }
 
-    protected void showReports(List<String> reports) {
+    protected void showReports(List<SignalRecording> recordings) {
 
         //JPanel gridPanel = new JPanel(new GridLayout(patients.size(), 0));
         JScrollPane scrollPane1 = new JScrollPane();
@@ -134,24 +129,23 @@ public class ReportsHistory extends JPanel implements ActionListener, MouseListe
         scrollPane1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         //scrollPane1.setViewportView(gridPanel);
 
-        reportsDefListModel = new DefaultListModel<>();
-        if(reports != null) {
-            for (String r : reports) {
-                reportsDefListModel.addElement(r);
+        recordingsDefListModel = new DefaultListModel<SignalRecording>();
+        if (recordings != null) {
+            for (SignalRecording r : recordings) {
+                recordingsDefListModel.addElement(r);
 
             }
         }
 
-
-        reportsList = new JList<String>(reportsDefListModel);
+        reportsList = new JList<SignalRecording>(recordingsDefListModel);
         reportsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        reportsList.setCellRenderer(new ReportCell());
+        reportsList.setCellRenderer(new RecordingCell());
         reportsList.addMouseListener(this);
         scrollPane1.setViewportView(reportsList);
 
         scrollPane1.setPreferredSize(this.getPreferredSize());
 
-        add(scrollPane1,  "cell 2 1 2 6, grow, gap 10");
+        add(scrollPane1, "cell 2 1 2 6, grow, gap 10");
     }
 
 

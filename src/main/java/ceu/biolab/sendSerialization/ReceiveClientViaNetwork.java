@@ -28,14 +28,14 @@ public class ReceiveClientViaNetwork {
             System.exit(-1);
         }
         try {
-            objectInputStream = new ObjectInputStream(inputStream);
+            objectInputStream = new ObjectInputStream(inputStream); //decorator
             Object tmp;
             while ((tmp = objectInputStream.readObject()) != null) {
                 Client persona = (Client) tmp;
                 System.out.println(persona.toString());
             }
-        } catch (EOFException ex) {
-            System.out.println("All data have been correctly read.");
+        } catch (EOFException ex) { //in this case the server doesn't stop unless it receives an exception
+            System.out.println("All data have been correctly read."); //Happens when we release the resources or flash the objectInputStream
         } catch (IOException | ClassNotFoundException ex) {
             System.out.println("Unable to read from the client.");
             Logger.getLogger(ReceiveClientViaNetwork.class.getName()).log(Level.SEVERE, null, ex);

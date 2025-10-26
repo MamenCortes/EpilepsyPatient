@@ -1,10 +1,10 @@
-package ui;
+package ui.windows;
 
+import model.Doctor;
 import net.miginfocom.swing.MigLayout;
 import ui.components.MyButton;
 import ui.components.MyComboBox;
 import ui.components.MyTextField;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -27,24 +27,29 @@ public class DoctorInfo extends JPanel implements ActionListener {
 
     private JLabel title;
     protected String titleText = " ";
-    protected JButton applyChanges;
+    //protected JButton applyChanges;
     protected JButton goBackButton;
     protected JLabel errorMessage;
     protected JPanel formContainer;
 
 
     //Format variables: Color and Font
-    private final Color titleColor2 = new Color(24, 116, 67);
-    private final Color titleColor = new Color(7, 164, 121);
-    private final Font titleFont = new Font("sansserif", 3, 15);
+    //private final Color titleColor = new Color(7, 164, 121);
+    //private final Font titleFont = new Font("sansserif", 3, 15);
+    //private final Font contentFont = new Font("sansserif", 1, 12);
+    //private final Color contentColor = new Color(24, 116, 67);
+    private final Color titleColor = Application.dark_purple;
+    private final Font titleFont = new Font("sansserif", Font.BOLD, 25);
     private final Font contentFont = new Font("sansserif", 1, 12);
-    private final Color contentColor = new Color(24, 116, 67);
-    private Color textFieldBg = new Color(230, 245, 241);
+    private final Color contentColor = Application.dark_turquoise;
+
+    private Doctor doctor;
 
 
     //private JDateChooser birthDate;
     public DoctorInfo(Application appMain) {
         this.appMain = appMain;
+        doctor = Application.doctor;
         initDoctorInfo();
 
     }
@@ -55,24 +60,28 @@ public class DoctorInfo extends JPanel implements ActionListener {
         //Initialize values
         //TODO: replace with actual doctor values
         name = new MyTextField();
-        name.setText("Dr. Michal Al-Hajjar");
+        //name.setText("Dr. Michal Al-Hajjar");
+        name.setText(doctor.getName() + " " + doctor.getSurname());
         name.setEnabled(false); //Doesnt allow editing
         email = new MyTextField();
-        email.setText("michal.alhajjar@gmail.com");
+        //email.setText("michal.alhajjar@gmail.com");
+        email.setText(doctor.getEmail());
         email.setEnabled(false);
         phoneNumber = new MyTextField();
-        phoneNumber.setText("123456789");
+        //phoneNumber.setText("123456789");
+        phoneNumber.setText(Integer.toString(doctor.getPhone()));
         phoneNumber.setEnabled(false);
         speciality = new MyTextField();
         speciality.setText("Neurologist | Epilepsy Specialist ");
         speciality.setEnabled(false);
         office = new MyTextField();
-        office.setText(
+        /*office.setText(
                 "Hospital General Universitario Gregorio Marañón\n" +
                 "\n" +
                 "C/ Doctor Esquerdo, 46\n" +
                 "\n" +
-                "28007 Madrid1");
+                "28007 Madrid1");*/
+        office.setText(doctor.getAddress());
         office.setEnabled(false);
         formContainer = new JPanel();
         initDoctorForm();
@@ -80,7 +89,9 @@ public class DoctorInfo extends JPanel implements ActionListener {
 
     private void initDoctorForm() {
         //this.setLayout(new MigLayout("fill, inset 15, gap 0, wrap 4, debug", "[][][][]", "[][][][][][][][][][]"));
-        this.setLayout(new MigLayout("debug, fill", "[][][][]", "[][][][][][][][][][]"));
+        this.setLayout(new MigLayout("fill", "[][][][]", "[][][][][][][][][][]"));
+        this.setBackground(Color.white);
+        //this.setBackground(Application.light_purple);
         formContainer.setBackground(Color.white);
         formContainer.setLayout(new MigLayout("fill, inset 10, gap 5, wrap 2", "[grow 10][grow 90]", "[][][][]push"));
 
@@ -88,9 +99,9 @@ public class DoctorInfo extends JPanel implements ActionListener {
         title = new JLabel(titleText);
         title.setHorizontalAlignment(SwingConstants.CENTER);
         title.setForeground(titleColor);
-        title.setFont(new Font("sansserif", Font.BOLD, 25));
+        title.setFont(titleFont);
         title.setAlignmentY(LEFT_ALIGNMENT);
-        title.setIcon(new ImageIcon(getClass().getResource("/icons/medical-chechup.png")));
+        title.setIcon(new ImageIcon(getClass().getResource("/icons/doctor-info64_2.png")));
         add(title, "cell 0 0 4 1, alignx left");
 
         //add(formContainer,  "cell 0 1 4 8, grow, gap 10");
@@ -139,17 +150,13 @@ public class DoctorInfo extends JPanel implements ActionListener {
         formContainer.add(office, "grow"); //TODO create birth date chooser
 
         //Add buttons
-        goBackButton = new MyButton("GO BACK");
-        goBackButton.setBackground(new Color(7, 164, 121));
-        goBackButton.setForeground(new Color(250, 250, 250));
+        goBackButton = new MyButton("GO BACK", Application.turquoise, Color.white);
         goBackButton.addActionListener(this);
         //add(goBackButton,"cell 1 7, left, gapx 10, gapy 5");
         add(goBackButton, "cell 0 9, span, center");
 
-        applyChanges = new MyButton("APPLY");
-        applyChanges.setBackground(new Color(7, 164, 121));
-        applyChanges.setForeground(new Color(250, 250, 250));
-        applyChanges.addActionListener(this);
+        //applyChanges = new MyButton("APPLY");
+        //applyChanges.addActionListener(this);
 
         /*errorMessage = new JLabel();
         errorMessage.setFont(new Font("sansserif", Font.BOLD, 12));

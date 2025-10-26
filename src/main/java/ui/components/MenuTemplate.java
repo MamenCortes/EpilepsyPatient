@@ -20,12 +20,12 @@ public class MenuTemplate extends JPanel implements ActionListener{
 
 
     public MenuTemplate() {
-        this.setLayout(new MigLayout("fill, inset 0, gap 0", "[][][][][]", "[][][][][]"));
+        this.setLayout(new MigLayout("fill, inset 0, gap 0", "[][][][][]", "[30%][20%][20%][20%][20%]"));
         buttons = new ArrayList<JButton>();
     }
 
-    protected void init() {
-        panelCoverMenu = new PanelCoverForMenu();
+    protected void init(ImageIcon logo, String company_name) {
+        panelCoverMenu = new PanelCoverForMenu(logo, company_name);
         panelMenu = new PanelMenu(buttons);
         for (JButton jButton : buttons) {
             jButton.addActionListener(this);

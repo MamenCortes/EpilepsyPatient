@@ -1,4 +1,8 @@
-package ui;
+package ui.windows;
+import model.Doctor;
+import model.ModelManager;
+import model.Patient;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -10,11 +14,26 @@ public class Application extends JFrame {
     private ArrayList<JPanel> appPanels;
     private UserLogIn logInPanel;
     private PatientMenu patientMenu;
-
+    //#022E57
+    public static Color darker_purple = new Color(114, 82, 153); //#725299
+    public static Color dark_purple = new Color(170, 84, 204); //#AA54CC
+    public static Color pink = new Color(226, 169, 241); //#E2A9F1
+    public static Color purple = new Color(196, 158, 207);
+    public static Color turquoise = new Color(94, 186, 176); //#5EBAB0
+    public static Color light_purple = new Color(239, 232, 255); //#EFE8FF
+    public static Color light_turquoise = new Color(193, 252, 244); //#C1FCF4
+    //public static Color light_turquoise = new Color(213, 242, 236); //#d5f2ec
+    public static Color lighter_turquoise = new Color(243, 250, 249);//#f3faf9
+    public static Color darker_turquoise = new Color(73, 129, 122);
+    public static Color dark_turquoise = new Color(52, 152, 143); //#34988f
     public static void main(String[] args) {
         Application app = new Application();
         app.setVisible(true);
     }
+
+    //Model values
+    public static Patient patient;
+    public static Doctor doctor;
 
     public Application() {
         appPanels = new ArrayList<JPanel>();
@@ -25,6 +44,10 @@ public class Application extends JFrame {
         appPanels.add(logInPanel);
         logInPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
         //setContentPane(logInPanel);
+        patient = ModelManager.generateRandomPatient();
+        System.out.println(patient);
+        doctor = ModelManager.generateRandomDoctor();
+        System.out.println(doctor);
         changeToPatientMenu();
     }
 
@@ -33,7 +56,7 @@ public class Application extends JFrame {
         //setSize(602, 436);
         setLayout(null);
         setLocationRelativeTo(null);
-        setIconImage(new ImageIcon(getClass().getResource("/icons/epilepsy512.png")).getImage());
+        setIconImage(new ImageIcon(getClass().getResource("/icons/night_guardian_mini_500.png")).getImage());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     }
