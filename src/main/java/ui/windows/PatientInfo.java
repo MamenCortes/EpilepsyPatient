@@ -1,6 +1,6 @@
 package ui.windows;
 
-import model.Patient;
+import pojos.Patient;
 import net.miginfocom.swing.MigLayout;
 import ui.components.MyButton;
 import ui.components.MyComboBox;
@@ -51,7 +51,7 @@ public class PatientInfo extends JPanel implements ActionListener {
     //private JDateChooser birthDate;
     public PatientInfo(Application appMain) {
         this.appMain = appMain;
-        patient = Application.patient;
+        patient = appMain.patient;
         initPatientInfo();
 
     }
@@ -60,7 +60,6 @@ public class PatientInfo extends JPanel implements ActionListener {
         this.titleText = "Patient information";
 
         //Initialize values
-        //TODO: replace with actual patient values
         name = new MyTextField();
         //name.setText("Jane");
         name.setText(patient.getName());
@@ -79,11 +78,11 @@ public class PatientInfo extends JPanel implements ActionListener {
         phoneNumber.setEnabled(false);
         sex = new MyTextField();
         //sex.setText("Non Binary");
-        sex.setText(patient.getSex());
+        sex.setText(patient.getGender());
         sex.setEnabled(false);
         birthDate = new MyTextField();
         //birthDate.setText("1999-11-11");
-        birthDate.setText(patient.getDateOfBirth());
+        birthDate.setText(patient.getDateOfBirth().toString());
         birthDate.setEnabled(false);
         formContainer = new JPanel();
         initPatientForm();
@@ -181,7 +180,7 @@ public class PatientInfo extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource() == goBackButton) {
-            appMain.changeToPatientMenu();
+            appMain.changeToMainMenu();
         }
     }
 }

@@ -1,6 +1,6 @@
 package ui.components;
 
-import model.SignalRecording;
+import pojos.Signal;
 import net.miginfocom.swing.MigLayout;
 import ui.windows.Application;
 
@@ -8,7 +8,7 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
 
-public class RecordingCell implements ListCellRenderer<SignalRecording> {
+public class RecordingCell implements ListCellRenderer<Signal> {
 
     private final Color titleColor = Application.turquoise;
     private final Font titleFont = new Font("sansserif", 3, 12);
@@ -18,7 +18,7 @@ public class RecordingCell implements ListCellRenderer<SignalRecording> {
 
 
     @Override
-    public Component getListCellRendererComponent(JList<? extends SignalRecording> list, SignalRecording value, int index,
+    public Component getListCellRendererComponent(JList<? extends Signal> list, Signal value, int index,
                                                   boolean isSelected, boolean cellHasFocus) {
 
         JPanel listCell = new JPanel();

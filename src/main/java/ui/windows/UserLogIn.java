@@ -3,6 +3,7 @@ package ui.windows;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.Objects;
 
 import javax.swing.*;
@@ -17,7 +18,7 @@ public class UserLogIn extends JPanel implements ActionListener{
     private JPanel panelLogIn;
     private MyButton applyLogIn;
     private MyButton changePassword;
-    private Application appMenu;
+    private Application appMain;
     private MyTextField emailTxF;
     private MyTextField passwordTxF;
     private MyTextField emailTxFLogIn;
@@ -30,8 +31,8 @@ public class UserLogIn extends JPanel implements ActionListener{
     /**
      * Create the panel.
      */
-    public UserLogIn(Application appMenu) {
-        this.appMenu = appMenu;
+    public UserLogIn(Application appMain) {
+        this.appMain = appMain;
         this.setLayout(new MigLayout("fill, inset 0, gap 0", "[30]0px[70:pref]", "[]"));
         init();
 
@@ -147,7 +148,7 @@ public class UserLogIn extends JPanel implements ActionListener{
 
         }else if(e.getSource() == changePassword) {
             if(canChangePassword()) {
-                showChangePasswordPane(appMenu);
+                showChangePasswordPane(appMain);
             }
 
         }
@@ -188,7 +189,6 @@ public class UserLogIn extends JPanel implements ActionListener{
                     }else {
                         panel.showErrorMessage("Password must contain 1 number and minimum 8 characters");
                     }
-
                 }else{
                     panel.showErrorMessage("Passwords do not match");
                 }
@@ -214,20 +214,17 @@ public class UserLogIn extends JPanel implements ActionListener{
         System.out.println("email: " + email+" password: "+password);
         if(!email.isBlank() && !password.isBlank()) {
 
-            appMenu.changeToPatientMenu();
-            /*User user = appMenu.jpaUserMan.login(email, password);
-            System.out.println(user);
-
-            //User is null if it doesn't exist
-            if(user != null) {
-                appMenu.setUser(user);
-                return true;
-            }else {
-                panelLogIn.showErrorMessage("Invalid user or password");
-                return false;
-            }*/
-
-            return true;
+            try {
+                if(appMain.client.login(email, password)){
+                    appMain.changeToMainMenu();
+                    return true;
+                }else{
+                    showErrorMessage("Incorrect email or password");
+                }
+            } catch (IOException e) {
+                showErrorMessage(e.getMessage());
+            }
+            return false;
 
         }else {
             showErrorMessage("Complete all fields");

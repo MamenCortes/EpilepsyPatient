@@ -1,8 +1,8 @@
 package ui.windows;
-import model.Doctor;
-import model.ModelManager;
-import model.Patient;
-
+import pojos.Doctor;
+import pojos.Patient;
+import pojos.User;
+import network.Client;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -26,14 +26,18 @@ public class Application extends JFrame {
     public static Color lighter_turquoise = new Color(243, 250, 249);//#f3faf9
     public static Color darker_turquoise = new Color(73, 129, 122);
     public static Color dark_turquoise = new Color(52, 152, 143); //#34988f
+
+
     public static void main(String[] args) {
         Application app = new Application();
         app.setVisible(true);
     }
 
     //Model values
-    public static Patient patient;
-    public static Doctor doctor;
+    public Patient patient;
+    public Doctor doctor;
+    public User user;
+    public Client client;
 
     public Application() {
         appPanels = new ArrayList<JPanel>();
@@ -44,11 +48,15 @@ public class Application extends JFrame {
         appPanels.add(logInPanel);
         logInPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
         //setContentPane(logInPanel);
-        patient = ModelManager.generateRandomPatient();
+        /*patient = ModelManager.generateRandomPatient();
         System.out.println(patient);
         doctor = ModelManager.generateRandomDoctor();
-        System.out.println(doctor);
-        changeToPatientMenu();
+        System.out.println(doctor);*/
+        patient = new Patient();
+        doctor = new Doctor();
+        user = new User();
+        client = new Client("localhost", 9009, this);
+        changeToMainMenu();
     }
 
     public void initComponents() {
@@ -75,7 +83,7 @@ public class Application extends JFrame {
         this.setContentPane(logInPanel);
     }
 
-    public void changeToPatientMenu(){
+    public void changeToMainMenu(){
         hideAllPanels();
         if (patientMenu == null) {
             patientMenu = new PatientMenu(this);

@@ -1,6 +1,6 @@
 package ui.windows;
 
-import model.Doctor;
+import pojos.Doctor;
 import net.miginfocom.swing.MigLayout;
 import ui.components.MyButton;
 import ui.components.MyComboBox;
@@ -49,7 +49,7 @@ public class DoctorInfo extends JPanel implements ActionListener {
     //private JDateChooser birthDate;
     public DoctorInfo(Application appMain) {
         this.appMain = appMain;
-        doctor = Application.doctor;
+        doctor = appMain.doctor;
         initDoctorInfo();
 
     }
@@ -81,7 +81,7 @@ public class DoctorInfo extends JPanel implements ActionListener {
                 "C/ Doctor Esquerdo, 46\n" +
                 "\n" +
                 "28007 Madrid1");*/
-        office.setText(doctor.getAddress());
+        office.setText(doctor.getDepartment());
         office.setEnabled(false);
         formContainer = new JPanel();
         initDoctorForm();
@@ -171,7 +171,7 @@ public class DoctorInfo extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == goBackButton) {
-            appMain.changeToPatientMenu();
+            appMain.changeToMainMenu();
         }
     }
 }

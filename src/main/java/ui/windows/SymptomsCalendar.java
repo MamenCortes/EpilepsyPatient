@@ -1,15 +1,14 @@
 package ui.windows;
 
-import model.ModelManager;
-import model.SymptomReport;
-import model.SymptomType;
+import pojos.ModelManager;
+import pojos.Report;
+import pojos.SymptomType;
 import net.miginfocom.swing.MigLayout;
 import ui.components.MyButton;
 import ui.components.MyComboBox;
 import ui.temp.SymptomCalendar;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -27,7 +26,7 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
     private JTable table;
     private JPanel legendPanel;
     private Application appMenu;
-    private ArrayList<SymptomReport> allSymptoms;
+    private ArrayList<Report> allSymptoms;
 
     //Format variables
     protected final Font titleFont = new Font("sansserif", 3, 15);
@@ -180,7 +179,7 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
 
                 // Buscar síntomas de este día
                 StringBuilder symptomsPart = new StringBuilder();
-                for (SymptomReport s : allSymptoms) {
+                for (Report s : allSymptoms) {
                     LocalDate symptomDate = LocalDate.parse(s.getDate(), formatter);
                     if (symptomDate.equals(currentDate)) {
                         if (symptomsPart.length() > 0) symptomsPart.append(",");
@@ -264,7 +263,7 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
     @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource() == goBackButton) {
-            appMenu.changeToPatientMenu();
+            appMenu.changeToMainMenu();
         }
     }
 

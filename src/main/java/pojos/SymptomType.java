@@ -1,4 +1,4 @@
-package model;
+package pojos;
 
 public enum SymptomType {
     Muscle_Stiffness,

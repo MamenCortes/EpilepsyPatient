@@ -1,19 +1,18 @@
-package model;
+package pojos;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 
-public class SymptomReport {
+public class Report {
     private SymptomType symptomType;  // ArrayList of strings for symptoms
     private String date;
     // Constructor
-    public SymptomReport() {
+    public Report() {
         this.symptomType = SymptomType.None; // Initialize the ArrayList
         this.date = DateTimeFormatter.ofPattern("dd/MM/yyyy").format(LocalDateTime.now());
     }
 
-    public SymptomReport(String date,  SymptomType symptomType) {
+    public Report(String date, SymptomType symptomType) {
         this.symptomType = symptomType; // Initialize the ArrayList
         this.date = date;
     }

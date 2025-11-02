@@ -1,5 +1,6 @@
-package model;
+package pojos;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -20,14 +21,15 @@ public class ModelManager {
         int year = 1950 + random.nextInt(51);  // 1950 to 2000
         int month = 1 + random.nextInt(12);    // 1 to 12
         int day = 1 + random.nextInt(28);      // 1 to 28 (to avoid invalid dates like Feb 30)
-        String dateOfBirth = String.format("%02d-%02d-%04d", day, month, year);  // Format as "YYYY-MM-DD"
+        //String dateOfBirth = String.format("%02d-%02d-%04d", day, month, year);  // Format as "YYYY-MM-DD"
+        LocalDate dateOfBirth = LocalDate.of(year, month, day);
         // Create and populate the Patient object
         Patient patient = new Patient();
         patient.setName(name);
         patient.setSurname(surname);
         patient.setEmail(email);
         patient.setPhone(phone);  // Assuming setPhone accepts an Integer
-        patient.setSex(sex);
+        patient.setGender(sex);
         patient.setDateOfBirth(dateOfBirth);
         return patient;
     }
@@ -57,18 +59,18 @@ public class ModelManager {
         doctor.setSurname(surname);
         doctor.setEmail(email);
         doctor.setPhone(phone);  // Assuming setPhone accepts an Integer
-        doctor.setAddress(address);
+        doctor.setDepartment(address);
         return doctor;
     }
 
-    public static ArrayList<SignalRecording> generateRandomSignalRecordings() {
+    public static ArrayList<Signal> generateRandomSignalRecordings() {
         Random random = new Random();
-        ArrayList<SignalRecording> signalReports = new ArrayList<>();
+        ArrayList<Signal> signalReports = new ArrayList<>();
         //ArrayList<Report> patientReports = new ArrayList<>();
         // Step 1: Generate a common date and create at least one Signal with it
         String commonDate = generateRandomDate(random);  // Generate a random date to share
 
-        SignalRecording sharedReport = new SignalRecording();
+        Signal sharedReport = new Signal();
             sharedReport.setDate(commonDate);  // Same date as sharedSymptoms
             sharedReport.setComments("Random comments for shared signal");
             sharedReport.setSamplingFrequency(50 + random.nextInt(151));  // 50 to 200
@@ -77,7 +79,7 @@ public class ModelManager {
         int additionalReports = 3 + random.nextInt(6);  // 3 to 8 more reports
 
         for (int i = 0; i < additionalReports; i++) {
-            SignalRecording sig = new SignalRecording();
+            Signal sig = new Signal();
             sig.setDate(generateRandomDate(random));  // Random date
             sig.setComments("Random comments " + i);
             sig.setSamplingFrequency(50 + random.nextInt(151));  // 50 to 200
@@ -86,14 +88,14 @@ public class ModelManager {
         return signalReports;  // Return the list of Reports*/
     }
 
-    public static ArrayList<SymptomReport> generateRandomSymptomReports() {
+    public static ArrayList<Report> generateRandomSymptomReports() {
         Random random = new Random();
-        ArrayList<SymptomReport> signalReports = new ArrayList<>();
+        ArrayList<Report> signalReports = new ArrayList<>();
         //int numSymptoms = 1 + random.nextInt(15);  // 1 to 15 symptoms
         int numSymptoms = 15;
 
         for (int i = 0; i < numSymptoms; i++) {// Randomly choose Symptoms
-            SymptomReport sym = new SymptomReport();
+            Report sym = new Report();
             sym.setDate(generateRandomDate(random));  // Random date
             sym.setSymptomType(SymptomType.values()[random.nextInt(SymptomType.values().length)]);
             signalReports.add(sym);

@@ -1,9 +1,9 @@
-package model;
+package pojos;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class SignalRecording {
+public class Signal {
     private String comments;
     private int samplingFrequency;
     private String ECG;
@@ -22,7 +22,7 @@ public class SignalRecording {
 
     private String date;
 
-    public SignalRecording(String date, int samplingFrequency, String ECG, String ACCx, String ACCy, String ACCz, String timeStamp) {
+    public Signal(String date, int samplingFrequency, String ECG, String ACCx, String ACCy, String ACCz, String timeStamp) {
         this.samplingFrequency = samplingFrequency;
         this.ECG = ECG;
         this.ACCx = ACCx;
@@ -33,7 +33,7 @@ public class SignalRecording {
         this.date = date;
     }
 
-    public SignalRecording() {
+    public Signal() {
         super();
         this.samplingFrequency = 100;
         this.ECG = "";

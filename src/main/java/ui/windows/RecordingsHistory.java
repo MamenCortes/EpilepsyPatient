@@ -11,9 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import model.ModelManager;
-import model.SignalRecording;
-import model.SymptomReport;
+import pojos.ModelManager;
+import pojos.Signal;
 import net.miginfocom.swing.MigLayout;
 import ui.components.MyButton;
 import ui.components.MyTextField;
@@ -39,8 +38,8 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
     protected JLabel errorMessage;
     protected MyButton goBackButton;
     //protected Application appMain;
-    protected JList<SignalRecording> reportsList;
-    protected DefaultListModel<SignalRecording> recordingsDefListModel;
+    protected JList<Signal> reportsList;
+    protected DefaultListModel<Signal> recordingsDefListModel;
 
     public RecordingsHistory(Application appMain) {
         this.appMain = appMain;
@@ -121,7 +120,7 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
         //showDoctors(createRandomDoctors());
     }
 
-    protected void showReports(List<SignalRecording> recordings) {
+    protected void showReports(List<Signal> recordings) {
 
         //JPanel gridPanel = new JPanel(new GridLayout(patients.size(), 0));
         JScrollPane scrollPane1 = new JScrollPane();
@@ -129,15 +128,15 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
         scrollPane1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         //scrollPane1.setViewportView(gridPanel);
 
-        recordingsDefListModel = new DefaultListModel<SignalRecording>();
+        recordingsDefListModel = new DefaultListModel<Signal>();
         if (recordings != null) {
-            for (SignalRecording r : recordings) {
+            for (Signal r : recordings) {
                 recordingsDefListModel.addElement(r);
 
             }
         }
 
-        reportsList = new JList<SignalRecording>(recordingsDefListModel);
+        reportsList = new JList<Signal>(recordingsDefListModel);
         reportsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         reportsList.setCellRenderer(new RecordingCell());
         reportsList.addMouseListener(this);
@@ -151,7 +150,7 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
 
     public void actionPerformed(ActionEvent e) {
         if(e.getSource() == goBackButton) {
-            appMain.changeToPatientMenu();
+            appMain.changeToMainMenu();
         }
         /*if(e.getSource() == searchButton) {
             errorMessage.setVisible(false);
