@@ -22,8 +22,8 @@ public class DoctorInfo extends JPanel implements ActionListener {
     private JLabel specHeading;
     private MyTextField speciality;
     private MyComboBox<String> nextStep;
-    private JLabel officeHeading;
-    private MyTextField office;
+    private JLabel departmentHeading;
+    private MyTextField department;
 
     private JLabel title;
     protected String titleText = " ";
@@ -43,13 +43,12 @@ public class DoctorInfo extends JPanel implements ActionListener {
     private final Font contentFont = new Font("sansserif", 1, 12);
     private final Color contentColor = Application.dark_turquoise;
 
-    private Doctor doctor;
 
 
     //private JDateChooser birthDate;
     public DoctorInfo(Application appMain) {
         this.appMain = appMain;
-        doctor = appMain.doctor;
+        //doctor = appMain.doctor;
         initDoctorInfo();
 
     }
@@ -61,39 +60,39 @@ public class DoctorInfo extends JPanel implements ActionListener {
         //TODO: replace with actual doctor values
         name = new MyTextField();
         //name.setText("Dr. Michal Al-Hajjar");
-        name.setText(doctor.getName() + " " + doctor.getSurname());
+        //name.setText(doctor.getName() + " " + doctor.getSurname());
         name.setEnabled(false); //Doesnt allow editing
         email = new MyTextField();
         //email.setText("michal.alhajjar@gmail.com");
-        email.setText(doctor.getEmail());
+        //email.setText(doctor.getEmail());
         email.setEnabled(false);
         phoneNumber = new MyTextField();
         //phoneNumber.setText("123456789");
-        phoneNumber.setText(Integer.toString(doctor.getPhone()));
+        //phoneNumber.setText(Integer.toString(doctor.getPhone()));
         phoneNumber.setEnabled(false);
         speciality = new MyTextField();
-        speciality.setText("Neurologist | Epilepsy Specialist ");
+        //speciality.setText("Neurologist | Epilepsy Specialist ");
         speciality.setEnabled(false);
-        office = new MyTextField();
+        department = new MyTextField();
         /*office.setText(
                 "Hospital General Universitario Gregorio Marañón\n" +
                 "\n" +
                 "C/ Doctor Esquerdo, 46\n" +
                 "\n" +
                 "28007 Madrid1");*/
-        office.setText(doctor.getDepartment());
-        office.setEnabled(false);
+        //office.setText(doctor.getDepartment());
+        department.setEnabled(false);
         formContainer = new JPanel();
         initDoctorForm();
     }
 
     private void initDoctorForm() {
         //this.setLayout(new MigLayout("fill, inset 15, gap 0, wrap 4, debug", "[][][][]", "[][][][][][][][][][]"));
-        this.setLayout(new MigLayout("fill", "[][][][]", "[][][][][][][][][][]"));
+        this.setLayout(new MigLayout("fill", "[][][][]", "[][][][][][][][][][][]"));
         this.setBackground(Color.white);
         //this.setBackground(Application.light_purple);
         formContainer.setBackground(Color.white);
-        formContainer.setLayout(new MigLayout("fill, inset 10, gap 5, wrap 2", "[grow 10][grow 90]", "[][][][]push"));
+        formContainer.setLayout(new MigLayout("fill, inset 10, gap 5, wrap 2", "[grow 10][grow 90]", "[][][][][]push"));
 
         //Add Title
         title = new JLabel(titleText);
@@ -118,7 +117,7 @@ public class DoctorInfo extends JPanel implements ActionListener {
         //formContainer.add(nameHeading, "cell 0 0");
         formContainer.add(nameHeading, "grow");
 
-        //ROW 2
+        //R
         formContainer.add(name, "grow");
 
         //ROW 3
@@ -126,10 +125,13 @@ public class DoctorInfo extends JPanel implements ActionListener {
         emailHeading.setFont(contentFont);
         emailHeading.setForeground(contentColor);
         formContainer.add(emailHeading, "grow");
-        //add(nameText, "skip 1, grow");
-
-        //ROW 4
         formContainer.add(email, "grow");
+
+        phoneHeading = new JLabel("Phone*");
+        phoneHeading.setFont(contentFont);
+        phoneHeading.setForeground(contentColor);
+        formContainer.add(phoneHeading, "grow");
+        formContainer.add(phoneNumber, "grow");
 
         //ROW 5
         specHeading = new JLabel("Speciality*");
@@ -141,36 +143,64 @@ public class DoctorInfo extends JPanel implements ActionListener {
 
 
         //ROW 7
-        officeHeading = new JLabel("Office*");
-        officeHeading.setFont(contentFont);
-        officeHeading.setForeground(contentColor);
-        formContainer.add(officeHeading, "grow");
+        departmentHeading = new JLabel("Department*");
+        departmentHeading.setFont(contentFont);
+        departmentHeading.setForeground(contentColor);
+        formContainer.add(departmentHeading, "grow");
 
         //ROW 8
-        formContainer.add(office, "grow"); //TODO create birth date chooser
+        formContainer.add(department, "grow"); //TODO create birth date chooser
 
         //Add buttons
         goBackButton = new MyButton("GO BACK", Application.turquoise, Color.white);
         goBackButton.addActionListener(this);
         //add(goBackButton,"cell 1 7, left, gapx 10, gapy 5");
-        add(goBackButton, "cell 0 9, span, center");
+        add(goBackButton, "cell 0 10, span, center");
 
         //applyChanges = new MyButton("APPLY");
         //applyChanges.addActionListener(this);
 
-        /*errorMessage = new JLabel();
+        errorMessage = new JLabel();
         errorMessage.setFont(new Font("sansserif", Font.BOLD, 12));
         errorMessage.setForeground(Color.red);
         errorMessage.setText("Error message test");
         //this.add(errorMessage, "cell 0 8, span, left");
-        this.add(errorMessage, "cell 0 1, span, center");
-        errorMessage.setVisible(true);*/
+        this.add(errorMessage, "cell 0 9, span, center");
+        errorMessage.setVisible(false);
 
+    }
+
+    private void showErrorMessage(String message) {
+        errorMessage.setVisible(true);
+        errorMessage.setText(message);
+    }
+
+    public void updateDoctorForm(Doctor doctor) {
+        if(doctor != null) {
+            name.setText(doctor.getName()+" "+doctor.getSurname());
+            email.setText(doctor.getEmail());
+            phoneNumber.setText(Integer.toString(doctor.getPhone()));
+            speciality.setText(doctor.getSpeciality());
+            department.setText(doctor.getDepartment());
+        }else{
+            showErrorMessage("No doctor assigned yet");
+        }
+        }
+
+
+    public void resetForm() {
+        name.setText("");
+        email.setText("");
+        phoneNumber.setText("");
+        speciality.setText("");
+        department.setText("");
+        errorMessage.setVisible(false);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == goBackButton) {
+            resetForm();
             appMain.changeToMainMenu();
         }
     }

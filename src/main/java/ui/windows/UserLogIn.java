@@ -4,11 +4,15 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import javax.swing.*;
 
 import net.miginfocom.swing.MigLayout;
+import pojos.Patient;
+import pojos.User;
 import ui.components.*;
 
 public class UserLogIn extends JPanel implements ActionListener{
@@ -144,6 +148,7 @@ public class UserLogIn extends JPanel implements ActionListener{
             System.out.println("LogIn");
             if(logIn()) {
                 resetPanel();
+                appMain.changeToMainMenu();
             }
 
         }else if(e.getSource() == changePassword) {
@@ -215,11 +220,16 @@ public class UserLogIn extends JPanel implements ActionListener{
         if(!email.isBlank() && !password.isBlank()) {
 
             try {
-                if(appMain.client.login(email, password)){
-                    appMain.changeToMainMenu();
+                Map<String, Object> response = appMain.client.login(email, password);
+                Boolean success =  (Boolean) response.get("login");
+                System.out.println(success);
+                if(success) {
+                    appMain.patient = (Patient) response.get("patient");
+                    appMain.user = (User) response.get("user");
                     return true;
                 }else{
-                    showErrorMessage("Incorrect email or password");
+                    showErrorMessage(response.get("message").toString());
+                    //showErrorMessage("Incorrect email or password");
                 }
             } catch (IOException e) {
                 showErrorMessage(e.getMessage());

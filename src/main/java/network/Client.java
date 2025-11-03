@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import pojos.Doctor;
 import pojos.Patient;
 import pojos.User;
 import ui.windows.Application;
@@ -41,8 +42,9 @@ public class Client {
         out.println("Hi! I'm a new client!\n");
     }
 
-    public boolean login(String email, String password) throws IOException {
+    public Map<String, Object> login(String email, String password) throws IOException {
         //String message = "LOGIN;" + email + ";" + password;
+        Map<String, Object> login = new HashMap<>();
 
         Map<String, Object> data = new HashMap<>();
         data.put("email", email);
@@ -62,6 +64,7 @@ public class Client {
         // Check response
         String status = response.get("status").getAsString();
         if (status.equals("SUCCESS")) {
+            login.put("login", true);
             JsonObject userJson = response.getAsJsonObject("user");
             int id = userJson.get("id").getAsInt();
             String role = userJson.get("role").getAsString();
@@ -92,16 +95,30 @@ public class Client {
                     Patient patient = Patient.fromJason(response.getAsJsonObject("patient"));
                     System.out.println(patient);
                     appMain.patient = patient;
-                    return true;
+                    login.put("login", true);
+                    login.put("message", "Login successful!");
+                    login.put("patient", patient);
+                    login.put("user", user);
+                    return login;
                 }
-                return false;
+                login.put("login", false);
+                login.put("message", response.get("message").getAsString());
+                login.put("patient", null);
+                login.put("user", null);
+                return login;
             }else{
-                return false;
+                login.put("login", false);
+                login.put("message", "Unauthorized access");
+                login.put("patient", null);
+                login.put("user", null);
+                return login;
             }
         } else {
-            String errorMsg = response.get("message").getAsString();
-            System.out.println("Login failed: " + errorMsg);
-            return false;
+            login.put("login", false);
+            login.put("message", response.get("message").getAsString());
+            login.put("patient", null);
+            login.put("user", null);
+            return login;
         }
     }
 
@@ -115,13 +132,14 @@ public class Client {
         releaseResources(out, socket);
     }
 
-    public List<Patient> getPatientsFromDoctor(int doctor_id) throws IOException {
+    public Doctor getDoctorFromPatient(int doctor_id, int patient_id, int user_id) throws IOException {
         Map<String, Object> data = new HashMap<>();
         data.put("doctor_id", doctor_id);
-        data.put("user_id", appMain.user.getId());
+        data.put("user_id", user_id);
+        data.put("patient_id", patient_id);
 
         Map<String, Object> message = new HashMap<>();
-        message.put("type", "REQUEST_PATIENTS_FROM_DOCTOR");
+        message.put("type", "REQUEST_DOCTOR_BY_ID");
         message.put("data", data);
 
         String jsonMessage = gson.toJson(message);
@@ -129,20 +147,15 @@ public class Client {
 
         String line = in.readLine();
         JsonObject response = gson.fromJson(line, JsonObject.class);
-        List<Patient> patients = new ArrayList<>();
+        Doctor doctor = null;
 
         String status = response.get("status").getAsString();
         if (status.equals("SUCCESS")) {
-            JsonArray data_response = response.getAsJsonArray("patients");
-
-            for (JsonElement element : data_response) {
-                patients.add(Patient.fromJason(element.getAsJsonObject()));
-            }
-
-            System.out.println("Received " + patients.size() + " patients.");
+            doctor = Doctor.fromJason(response.getAsJsonObject("doctor"));
         }
-        return patients;
+        return doctor;
     }
+
 
     public static void main(String args[]) throws IOException {
         System.out.println("Starting Client...");

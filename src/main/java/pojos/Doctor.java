@@ -109,4 +109,11 @@ public class Doctor {
         doctor.setSpeciality(json.get("speciality").getAsString());
         return doctor;
     }
+
+    public Boolean isEmpty(){
+        if(name.equals("")&&surname.equals("")&&email.equals("")&&phone == 123456789&&department.equals("")&&speciality.equals("")){
+            return true;
+        }
+        return false;
+    }
 }

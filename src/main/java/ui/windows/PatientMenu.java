@@ -1,9 +1,11 @@
 package ui.windows;
 
+import pojos.Doctor;
 import ui.components.MenuTemplate;
 import ui.components.MyButton;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
 
 public class PatientMenu extends MenuTemplate {
     private static final long serialVersionUID = 6050014345831062858L;
@@ -63,9 +65,22 @@ public class PatientMenu extends MenuTemplate {
     public void actionPerformed(ActionEvent e) {
         if(e.getSource()== seeDoctorInfo) {
             //appMenu.changeToAddPatient();
+            Doctor doctor = null;
+            if(appMenu.doctor == null) {
+                try {
+                    doctor = appMenu.client.getDoctorFromPatient(appMenu.patient.getDoctor_id(), appMenu.patient.getId(), appMenu.user.getId());appMenu.changeToPanel(doctorInfo);
+                    System.out.println("Doctor = "+doctor);
+                    appMenu.doctor = doctor;
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+            System.out.println("Doctor ="+ doctor);
+            doctorInfo.updateDoctorForm(doctor);
             appMenu.changeToPanel(doctorInfo);
         }else if(e.getSource()== seePatientDetails) {
             //appMenu.changeToSearchPatient();
+            patientInfo.updatePatientForm(appMenu.patient);
             appMenu.changeToPanel(patientInfo);
         }else if(e.getSource()== seeRecordingHistory) {
             //appMenu.changeToSearchPatient();
@@ -75,6 +90,9 @@ public class PatientMenu extends MenuTemplate {
         }else if(e.getSource()==seeSymptomsCalendar) {
             appMenu.changeToPanel(symptomsCalendar);
         }else if(e.getSource()==logOutButton) {
+            appMenu.doctor = null;
+            appMenu.patient = null;
+            appMenu.user = null;
             appMenu.changeToUserLogIn();
         }
 

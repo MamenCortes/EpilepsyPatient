@@ -47,16 +47,9 @@ public class Application extends JFrame {
         logInPanel = new UserLogIn(this);
         appPanels.add(logInPanel);
         logInPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
-        //setContentPane(logInPanel);
-        /*patient = ModelManager.generateRandomPatient();
-        System.out.println(patient);
-        doctor = ModelManager.generateRandomDoctor();
-        System.out.println(doctor);*/
-        patient = new Patient();
-        doctor = new Doctor();
-        user = new User();
         client = new Client("localhost", 9009, this);
-        changeToMainMenu();
+        setContentPane(logInPanel);
+        //changeToMainMenu();
     }
 
     public void initComponents() {
