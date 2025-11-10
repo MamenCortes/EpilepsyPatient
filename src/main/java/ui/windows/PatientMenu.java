@@ -1,6 +1,7 @@
 package ui.windows;
 
 import pojos.Doctor;
+import pojos.ModelManager;
 import ui.components.MenuTemplate;
 import ui.components.MyButton;
 import javax.swing.*;
@@ -84,6 +85,7 @@ public class PatientMenu extends MenuTemplate {
             appMenu.changeToPanel(patientInfo);
         }else if(e.getSource()== seeRecordingHistory) {
             //appMenu.changeToSearchPatient();
+            recordingsHistory.updateSignalRecordingsList(ModelManager.generateRandomSignalRecordings());
             appMenu.changeToPanel(recordingsHistory);
         }else if(e.getSource()== recordBitalino) {
             //appMenu.changeToSearchPatient();

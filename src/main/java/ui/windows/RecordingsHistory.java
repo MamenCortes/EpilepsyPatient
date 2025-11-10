@@ -6,12 +6,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.stream.Collectors;
 
-import pojos.ModelManager;
 import pojos.Signal;
 import net.miginfocom.swing.MigLayout;
 import ui.components.MyButton;
@@ -33,39 +30,19 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
     protected String searchText = "Search By Date";
     protected MyTextField searchByTextField;
     protected MyButton searchButton;
-    protected MyButton cancelButton;
-    protected MyButton openFormButton;
+    protected MyButton resetListButton;
     protected JLabel errorMessage;
     protected MyButton goBackButton;
     //protected Application appMain;
     protected JList<Signal> reportsList;
     protected DefaultListModel<Signal> recordingsDefListModel;
+    private List<Signal> allRecordings;
 
     public RecordingsHistory(Application appMain) {
         this.appMain = appMain;
         initMainPanel();
-        showReports(ModelManager.generateRandomSignalRecordings());
+        //showReports(ModelManager.generateRandomSignalRecordings());
         //showPatients(null);
-    }
-
-    //TODO: función temporal hasta que creemos las bases de datos de reports
-    private static List<String> generateReports() {
-        List<String> reports = new ArrayList<>();
-
-        // Fecha aleatoria entre 2023 y 2025
-        Random random = new Random();
-        int year = 2023 + random.nextInt(3);  // 2023, 2024 o 2025
-        int dayOfYear = 1 + random.nextInt(365);
-        LocalDate startDate = LocalDate.ofYearDay(year, dayOfYear);
-
-        // Generar 5 reportes, incrementando un día cada vez
-        for (int i = 0; i < 5; i++) {
-            LocalDate date = startDate.plusDays(i);
-            String report = String.format("Report %d: %s", i + 1, date);
-            reports.add(report);
-        }
-
-        return reports;
     }
 
     private void initMainPanel() {
@@ -91,18 +68,18 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
         searchByTextField.setHint("YYYY-MM-DD");
         add(searchByTextField, "cell 0 2 2 1, alignx center, grow");
 
-        cancelButton = new MyButton("CANCEL");
-        cancelButton.addActionListener(this);
-        add(cancelButton, "cell 0 3, left, gapy 5, grow");
+        resetListButton = new MyButton("RESET");
+        resetListButton.addActionListener(this);
+        add(resetListButton, "cell 0 3, left, gapy 5, grow");
 
         searchButton = new MyButton("SEARCH");
         searchButton.addActionListener(this);
         add(searchButton, "cell 1 3, right, gapy 5, grow");
 
-        openFormButton = new MyButton("OPEN FILE");
+        /*openFormButton = new MyButton("OPEN FILE");
         openFormButton.addActionListener(this);
         add(openFormButton, "cell 0 4, center, gapy 5, span 2, grow");
-        openFormButton.setVisible(false);
+        openFormButton.setVisible(false);*/
 
         goBackButton = new MyButton("BACK TO MENU", Application.turquoise, Color.white);
         goBackButton.addActionListener(this);
@@ -116,26 +93,12 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
         this.add(errorMessage, "cell 0 5, span 2, left");
         errorMessage.setVisible(false);
 
-        //showPatients(appMain.patientMan.searchPatientsBySurname("Blanco"));
-        //showDoctors(createRandomDoctors());
-    }
-
-    protected void showReports(List<Signal> recordings) {
-
-        //JPanel gridPanel = new JPanel(new GridLayout(patients.size(), 0));
         JScrollPane scrollPane1 = new JScrollPane();
         scrollPane1.setOpaque(false);
         scrollPane1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         //scrollPane1.setViewportView(gridPanel);
 
         recordingsDefListModel = new DefaultListModel<Signal>();
-        if (recordings != null) {
-            for (Signal r : recordings) {
-                recordingsDefListModel.addElement(r);
-
-            }
-        }
-
         reportsList = new JList<Signal>(recordingsDefListModel);
         reportsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         reportsList.setCellRenderer(new RecordingCell());
@@ -145,12 +108,70 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
         scrollPane1.setPreferredSize(this.getPreferredSize());
 
         add(scrollPane1, "cell 2 1 2 6, grow, gap 10");
+
+        //showPatients(appMain.patientMan.searchPatientsBySurname("Blanco"));
+        //showDoctors(createRandomDoctors());
+    }
+
+    public void updateSignalRecordingsList(List<Signal> list){
+        if(list == null || list.isEmpty()) {
+            showErrorMessage("No signal found!");
+            //openRecordingButton.setVisible(false);
+        }else{
+            if(allRecordings == null) {
+                allRecordings = list;
+            }
+        }
+        recordingsDefListModel.removeAllElements();
+        for (Signal r : list) {
+            recordingsDefListModel.addElement(r);
+
+        }
+    }
+
+    private void showErrorMessage(String message) {
+        errorMessage.setText(message);
+        errorMessage.setVisible(true);
+    }
+
+    private void hideErrorMessage() {
+        errorMessage.setVisible(false);
+    }
+
+    private void resetPanel(){
+        //TODO: reset panel when going back to menu
+        hideErrorMessage();
+        searchByTextField.setText("");
+        allRecordings = null;
+        recordingsDefListModel.clear();
     }
 
 
     public void actionPerformed(ActionEvent e) {
         if(e.getSource() == goBackButton) {
+            resetPanel();
             appMain.changeToMainMenu();
+        }if(e.getSource() == searchButton) {
+            errorMessage.setVisible(false);
+            String input = searchByTextField.getText();
+            System.out.println(input);
+            List<Signal> filteredRecordings = allRecordings.stream()
+                    .filter(r -> r.getDate().toString().contains(input))
+                    .collect(Collectors.toList());
+
+            updateSignalRecordingsList(filteredRecordings);
+            if(filteredRecordings.isEmpty()) {
+                showErrorMessage("No Signals found");
+                //openRecordingButton.setVisible(false);
+            }
+        }else if(e.getSource() == resetListButton) {
+            updateSignalRecordingsList(allRecordings);
+            if (allRecordings.isEmpty()) {
+                showErrorMessage("No patient found");
+                //openFormButton.setVisible(false);
+            } else {
+                //openFormButton.setVisible(true);
+            }
         }
         /*if(e.getSource() == searchButton) {
             errorMessage.setVisible(false);

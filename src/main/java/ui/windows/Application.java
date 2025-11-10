@@ -3,9 +3,17 @@ import pojos.Doctor;
 import pojos.Patient;
 import pojos.User;
 import network.Client;
+import ui.components.AskQuestionDialog;
+import ui.components.MyButton;
+import ui.components.MyTextField;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 
 public class Application extends JFrame {
@@ -30,7 +38,8 @@ public class Application extends JFrame {
 
     public static void main(String[] args) {
         Application app = new Application();
-        app.setVisible(true);
+        app.showDialogIntroduceIP(app);
+        //app.setVisible(true);
     }
 
     //Model values
@@ -38,6 +47,7 @@ public class Application extends JFrame {
     public Doctor doctor;
     public User user;
     public Client client;
+    private Integer serverPort = 9009;
 
     public Application() {
         appPanels = new ArrayList<JPanel>();
@@ -47,7 +57,7 @@ public class Application extends JFrame {
         logInPanel = new UserLogIn(this);
         appPanels.add(logInPanel);
         logInPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
-        client = new Client("localhost", 9009, this);
+        client = new Client( this);
         setContentPane(logInPanel);
         //changeToMainMenu();
     }
@@ -58,7 +68,17 @@ public class Application extends JFrame {
         setLayout(null);
         setLocationRelativeTo(null);
         setIconImage(new ImageIcon(getClass().getResource("/icons/night_guardian_mini_500.png")).getImage());
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        //setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // handle manually
+
+        // Window listener to stop server when closing
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                stopEverything();
+            }
+        });
 
     }
 
@@ -93,5 +113,62 @@ public class Application extends JFrame {
         hideAllPanels();
         panel.setVisible(true);
         this.setContentPane(panel);
+    }
+
+    private void showDialogIntroduceIP(JFrame parentFrame) {
+        MyTextField ipTextField = new MyTextField();
+        MyButton okButton = new MyButton("OK");
+        MyButton cancelButton = new MyButton("Cancel");
+
+        AskQuestionDialog askForIP = new AskQuestionDialog(ipTextField, okButton, cancelButton);
+        askForIP.setBackground(Color.white);
+        askForIP.setPreferredSize(new Dimension(400, 300));
+
+        JDialog dialog = new JDialog(parentFrame, "Server IP", true);
+        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        dialog.getContentPane().add(askForIP);
+        dialog.getContentPane().setBackground(Color.white);
+        dialog.pack();
+        dialog.setLocationRelativeTo(parentFrame);
+        askForIP.showErrorMessage("Remember to turn off the computer firewall");
+        //dialog.setSize(400, 200);
+
+        okButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String ip = ipTextField.getText();
+                if(ip != null && !ip.isBlank()) {
+                    try {
+                        if (client.connect(ip, serverPort)) {
+                            parentFrame.setVisible(true);
+                            dialog.dispose();
+                        } else {
+                            askForIP.showErrorMessage("Server IP Error");
+                        }
+                    }catch (Exception ex) {
+                        askForIP.showErrorMessage("Could not connect to server");
+                    }
+                }else{
+                    askForIP.showErrorMessage("Please enter an IP Address");
+                }
+            }
+        });
+
+        cancelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.dispose();
+                stopEverything();
+            }
+        });
+
+        dialog.setVisible(true);
+    }
+
+    private void stopEverything(){
+        if(client != null && client.isConnected()){
+            client.stopClient();
+        }
+        dispose();
     }
 }

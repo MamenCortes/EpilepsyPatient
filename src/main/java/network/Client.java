@@ -22,8 +22,12 @@ public class Client {
     private Application appMain;
     private Gson gson = new Gson();
 
-    public Client(String ip, int port, Application appMain) {
+    public Client(Application appMain) {
         this.appMain = appMain;
+    }
+
+    public Boolean connect(String ip, int port) {
+
         try {
             //socket = new Socket("localhost", 9009);
             socket = new Socket(ip, port);
@@ -32,8 +36,19 @@ public class Client {
                     new InputStreamReader(socket.getInputStream())
             );
             sendInitialMessage();
+            return true;
         }catch(IOException e){
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, e);
+            return false;
+        }
+
+    }
+
+    public Boolean isConnected(){
+        if(socket == null){
+            return false;
+        }else {
+            return socket.isConnected();
         }
     }
 
@@ -42,6 +57,7 @@ public class Client {
         out.println("Hi! I'm a new client!\n");
     }
 
+    //TODO: change to send Exception instead of MAP
     public Map<String, Object> login(String email, String password) throws IOException {
         //String message = "LOGIN;" + email + ";" + password;
         Map<String, Object> login = new HashMap<>();
@@ -49,6 +65,7 @@ public class Client {
         Map<String, Object> data = new HashMap<>();
         data.put("email", email);
         data.put("password", password);
+        data.put("access_permits", "Patient");
 
         Map<String, Object> message = new HashMap<>();
         message.put("type", "LOGIN_REQUEST");
@@ -65,7 +82,7 @@ public class Client {
         String status = response.get("status").getAsString();
         if (status.equals("SUCCESS")) {
             login.put("login", true);
-            JsonObject userJson = response.getAsJsonObject("user");
+            JsonObject userJson = response.getAsJsonObject("data");
             int id = userJson.get("id").getAsInt();
             String role = userJson.get("role").getAsString();
             System.out.println("Login successful!");
@@ -160,8 +177,8 @@ public class Client {
     public static void main(String args[]) throws IOException {
         System.out.println("Starting Client...");
         //"localhost", 9009
-        Client client = new Client("localhost", 9009, new Application());
-        client.stopClient();
+        //Client client = new Client("localhost", 9009, new Application());
+        //client.stopClient();
     }
 
     private static void releaseResources(PrintWriter printWriter, Socket socket) {
