@@ -2,7 +2,10 @@ package ui;
 
 
 
+import network.SendZipToServer;
+
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
@@ -33,7 +36,13 @@ public class MainPatientRecordSignals {
                 break;
             }
         }
-
+        System.out.println("Introduce la IP del servidor:");
+        String IP = br.readLine();
+        System.out.println("Introduce el puerto del servidor:");
+        int PORT = Integer.parseInt(br.readLine());
+        File zipFile = recorder.getZipFile();
+        SendZipToServer send =new SendZipToServer(IP,PORT);
+        send.sendZipToServer(zipFile);
         System.out.println("✅ Programa finalizado correctamente.");
     }
 }
