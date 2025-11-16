@@ -96,8 +96,8 @@ public class ModelManager {
 
         for (int i = 0; i < numSymptoms; i++) {// Randomly choose Symptoms
             Report sym = new Report();
-            sym.setDate(generateRandomDate(random));  // Random date
-            sym.setSymptomType(SymptomType.values()[random.nextInt(SymptomType.values().length)]);
+            sym.setDate(generateRandomLocalDate(random));  // Random date
+            sym.addSymptom(SymptomType.values()[random.nextInt(SymptomType.values().length)]);
             signalReports.add(sym);
         }
         return signalReports;  // Return the list of Reports*/
@@ -110,6 +110,15 @@ public class ModelManager {
         int month = 1 + random.nextInt(12);    // 1 to 12
         int day = 1 + random.nextInt(28);      // 1 to 28 to avoid invalid dates
         return String.format("%02d/%02d/%04d", day, month, year);
+    }
+
+    // Helper method to generate a random date in "YYYY-MM-DD" format
+    private static LocalDate generateRandomLocalDate(Random random) {
+        //int year = 2000 + random.nextInt(24);  // 2000 to 2023
+        int year = 2025;
+        int month = 1 + random.nextInt(12);    // 1 to 12
+        int day = 1 + random.nextInt(28);      // 1 to 28 to avoid invalid dates
+        return LocalDate.of(year, month, day);
     }
 
     public static void main(String[] args) {

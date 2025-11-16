@@ -2,11 +2,13 @@ package ui.windows;
 
 import pojos.Doctor;
 import pojos.ModelManager;
+import pojos.Report;
 import ui.components.MenuTemplate;
 import ui.components.MyButton;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class PatientMenu extends MenuTemplate {
     private static final long serialVersionUID = 6050014345831062858L;
@@ -17,12 +19,13 @@ public class PatientMenu extends MenuTemplate {
     private JButton seeSymptomsCalendar;
     private JButton recordBitalino;
     private JButton logOutButton;
-    private JButton connectBitalino;
+    private JButton newSymptom;
     private Application appMenu;
     private PatientInfo patientInfo;
     private DoctorInfo doctorInfo;
     private RecordingsHistory recordingsHistory;
     private SymptomsCalendar symptomsCalendar;
+    private NewSymptomPanel newSymptomPanel;
     private String company_name;
 
     public PatientMenu(Application appMenu) {
@@ -32,6 +35,7 @@ public class PatientMenu extends MenuTemplate {
         doctorInfo = new DoctorInfo(appMenu);
         recordingsHistory = new RecordingsHistory(appMenu);
         symptomsCalendar = new SymptomsCalendar(appMenu);
+        newSymptomPanel = new NewSymptomPanel(appMenu);
 
         addButtons();
         company_name = "NIGHT GUARDIAN: EPILEPSY";
@@ -48,7 +52,7 @@ public class PatientMenu extends MenuTemplate {
         seeDoctorInfo = new MyButton("My Physician");
         seeRecordingHistory = new MyButton("Recordings History");
         seeSymptomsCalendar = new MyButton("Symptoms History");
-        connectBitalino = new MyButton("Connect Bitalino");
+        newSymptom = new MyButton("New Symptoms");
         recordBitalino = new MyButton("New Recording");
         logOutButton = new MyButton("Log Out");
 
@@ -57,7 +61,7 @@ public class PatientMenu extends MenuTemplate {
         buttons.add(seeDoctorInfo);
         buttons.add(seeRecordingHistory);
         buttons.add(seeSymptomsCalendar);
-        buttons.add(connectBitalino);
+        buttons.add(newSymptom);
         buttons.add(recordBitalino);
         buttons.add(logOutButton);
     }
@@ -90,12 +94,15 @@ public class PatientMenu extends MenuTemplate {
         }else if(e.getSource()== recordBitalino) {
             //appMenu.changeToSearchPatient();
         }else if(e.getSource()==seeSymptomsCalendar) {
+            symptomsCalendar.updateData(appMenu.patient.getSymptomsList());
             appMenu.changeToPanel(symptomsCalendar);
         }else if(e.getSource()==logOutButton) {
             appMenu.doctor = null;
             appMenu.patient = null;
             appMenu.user = null;
             appMenu.changeToUserLogIn();
+        } else if (e.getSource()==newSymptom) {
+            appMenu.changeToPanel(newSymptomPanel);
         }
 
     }

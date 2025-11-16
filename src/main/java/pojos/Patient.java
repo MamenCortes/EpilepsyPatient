@@ -125,7 +125,9 @@ public class Patient {
         this.symptomsList = symptomsList;
     }
     public void addSymptom(Report symptom) {
+
         this.symptomsList.add(symptom);
+        System.out.println("Symptom added: " + symptom);
     }
 
     public Integer getId() {

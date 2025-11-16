@@ -30,12 +30,8 @@ public class PatientInfo extends JPanel implements ActionListener {
 
     private JLabel title;
     protected String titleText = " ";
-    protected JButton backButton;
-    protected JButton nextButton;
-    protected JButton deleteButton;
     protected JButton applyChanges;
     protected JButton goBackButton;
-    protected JLabel errorMessage;
     protected JPanel formContainer;
 
 
