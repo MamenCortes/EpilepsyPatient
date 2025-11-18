@@ -22,22 +22,26 @@ public class PatientMenu extends MenuTemplate {
     private JButton seeSymptomsCalendar;
     private JButton recordBitalino;
     private JButton logOutButton;
-    private JButton connectBitalino;
+    private JButton newSymptom;
     private Application appMenu;
-    private PatientInfo patientInfo;
-    private DoctorInfo doctorInfo;
-    private RecordingsHistory recordingsHistory;
-    private SymptomsCalendar symptomsCalendar;
+    private PatientInfo patientInfoPanel;
+    private DoctorInfo doctorInfoPanel;
+    private RecordingsHistory recordingsHistoryPanel;
+    private SymptomsCalendar symptomsCalendarPanel;
+    private NewSymptomPanel newSymptomPanel;
+    private RecordSignal recordSignalPanel;
     private String company_name;
     private final SignalRecorderService recorderService = new SignalRecorderService();
 
     public PatientMenu(Application appMenu) {
         //super();
         this.appMenu = appMenu;
-        patientInfo = new PatientInfo(appMenu);
-        doctorInfo = new DoctorInfo(appMenu);
-        recordingsHistory = new RecordingsHistory(appMenu);
-        symptomsCalendar = new SymptomsCalendar(appMenu);
+        patientInfoPanel = new PatientInfo(appMenu);
+        doctorInfoPanel = new DoctorInfo(appMenu);
+        recordingsHistoryPanel = new RecordingsHistory(appMenu);
+        symptomsCalendarPanel = new SymptomsCalendar(appMenu);
+        newSymptomPanel = new NewSymptomPanel(appMenu);
+        recordSignalPanel = new RecordSignal(appMenu);
 
         addButtons();
         company_name = "NIGHT GUARDIAN: EPILEPSY";
@@ -54,7 +58,7 @@ public class PatientMenu extends MenuTemplate {
         seeDoctorInfo = new MyButton("My Physician");
         seeRecordingHistory = new MyButton("Recordings History");
         seeSymptomsCalendar = new MyButton("Symptoms History");
-        connectBitalino = new MyButton("Connect Bitalino");
+        newSymptom = new MyButton("New Symptoms");
         recordBitalino = new MyButton("New Recording");
         logOutButton = new MyButton("Log Out");
 
@@ -63,7 +67,7 @@ public class PatientMenu extends MenuTemplate {
         buttons.add(seeDoctorInfo);
         buttons.add(seeRecordingHistory);
         buttons.add(seeSymptomsCalendar);
-        buttons.add(connectBitalino);
+        buttons.add(newSymptom);
         buttons.add(recordBitalino);
         buttons.add(logOutButton);
     }
@@ -75,7 +79,7 @@ public class PatientMenu extends MenuTemplate {
             Doctor doctor = null;
             if(appMenu.doctor == null) {
                 try {
-                    doctor = appMenu.client.getDoctorFromPatient(appMenu.patient.getDoctor_id(), appMenu.patient.getId(), appMenu.user.getId());appMenu.changeToPanel(doctorInfo);
+                    doctor = appMenu.client.getDoctorFromPatient(appMenu.patient.getDoctor_id(), appMenu.patient.getId(), appMenu.user.getId());appMenu.changeToPanel(doctorInfoPanel);
                     System.out.println("Doctor = "+doctor);
                     appMenu.doctor = doctor;
                 } catch (IOException ex) {
@@ -83,17 +87,21 @@ public class PatientMenu extends MenuTemplate {
                 }
             }
             System.out.println("Doctor ="+ doctor);
-            doctorInfo.updateDoctorForm(doctor);
-            appMenu.changeToPanel(doctorInfo);
+            doctorInfoPanel.updateDoctorForm(doctor);
+            appMenu.changeToPanel(doctorInfoPanel);
         }else if(e.getSource()== seePatientDetails) {
             //appMenu.changeToSearchPatient();
-            patientInfo.updatePatientForm(appMenu.patient);
-            appMenu.changeToPanel(patientInfo);
+            patientInfoPanel.updatePatientForm(appMenu.patient);
+            appMenu.changeToPanel(patientInfoPanel);
         }else if(e.getSource()== seeRecordingHistory) {
             //appMenu.changeToSearchPatient();
-            recordingsHistory.updateSignalRecordingsList(ModelManager.generateRandomSignalRecordings());
-            appMenu.changeToPanel(recordingsHistory);
+            recordingsHistoryPanel.updateSignalRecordingsList(ModelManager.generateRandomSignalRecordings());
+            appMenu.changeToPanel(recordingsHistoryPanel);
         }else if(e.getSource()== recordBitalino) {
+            appMenu.changeToPanel(recordSignalPanel);
+        }else if(e.getSource()==seeSymptomsCalendar) {
+            symptomsCalendarPanel.updateData(appMenu.patient.getSymptomsList());
+            appMenu.changeToPanel(symptomsCalendarPanel);
             int option = JOptionPane.showConfirmDialog(
                     this,
                     "Start a new BITalino recording?",
@@ -148,14 +156,13 @@ public class PatientMenu extends MenuTemplate {
                     }
                 }).start();
             }
-
-    }else if(e.getSource()==seeSymptomsCalendar) {
-            appMenu.changeToPanel(symptomsCalendar);
         }else if(e.getSource()==logOutButton) {
             appMenu.doctor = null;
             appMenu.patient = null;
             appMenu.user = null;
             appMenu.changeToUserLogIn();
+        } else if (e.getSource()==newSymptom) {
+            appMenu.changeToPanel(newSymptomPanel);
         }
 
     }

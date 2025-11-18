@@ -19,6 +19,7 @@ import java.awt.event.MouseListener;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.List;
 
 public class SymptomsCalendar extends JPanel implements ActionListener, MouseListener {
 
@@ -43,7 +44,8 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
         this.appMenu = appMenu;
         colors = generateSymptomColors(SymptomType.class);
         //TODO: get real patient symptoms
-        allSymptoms = ModelManager.generateRandomSymptomReports();
+        //allSymptoms = ModelManager.generateRandomSymptomReports();
+        allSymptoms = appMenu.patient.getSymptomsList();
         System.out.println("Num symptoms: " + allSymptoms.size());
         initPanel();
     }
@@ -55,7 +57,6 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
     public static Map<String, Color> generateSymptomColors(Class<? extends Enum<?>> enumClass) {
         Map<String, Color> colorMap = new HashMap<>();
         Random random = new Random();
-
         Set<Color> usedColors = new HashSet<>();
 
         for (Enum<?> constant : enumClass.getEnumConstants()) {
@@ -152,7 +153,12 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
         updateTable(monthComboBox.getSelectedIndex() + 1);
     }
 
-    private void updateTable(int month) {
+    public void updateData(ArrayList<Report> reports) {
+        allSymptoms = reports;
+        updateTable(LocalDate.now().getMonthValue());
+    }
+
+    public void updateTable(int month) {
         int year = LocalDate.now().getYear();
         YearMonth yearMonth = YearMonth.of(year, month);
         int daysInMonth = yearMonth.lengthOfMonth();
@@ -165,28 +171,32 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
         int dayCounter = 1;
         int startCol = firstWeekday.getValue() % 7; // Sunday=0
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
         outer:
         for (int row = 0; row < 6; row++) {
             for (int col = 0; col < 7; col++) {
+
                 if (row == 0 && col < startCol) continue;
                 if (dayCounter > daysInMonth) break outer;
 
                 LocalDate currentDate = LocalDate.of(year, month, dayCounter);
-                StringBuilder cellText = new StringBuilder();
-                cellText.append(dayCounter); // siempre mostramos el número del día
 
-                // Buscar síntomas de este día
+                StringBuilder cellText = new StringBuilder();
+                cellText.append(dayCounter); // day number always shown
+
+                // ---- Find symptoms for this date ----
                 StringBuilder symptomsPart = new StringBuilder();
-                for (Report s : allSymptoms) {
-                    LocalDate symptomDate = LocalDate.parse(s.getDate(), formatter);
-                    if (symptomDate.equals(currentDate)) {
-                        if (symptomsPart.length() > 0) symptomsPart.append(",");
-                        symptomsPart.append(s.getSymptomType().name()); // si es enum
+
+                for (Report r : allSymptoms) {
+                    if (r.getDate().equals(currentDate)) {
+                        // Loop through the list of symptom types
+                        for (SymptomType type : r.getSymptomList()) {
+                            if (symptomsPart.length() > 0) symptomsPart.append(",");
+                            symptomsPart.append(type.name());
+                        }
                     }
                 }
 
+                // If symptoms found, append them
                 if (symptomsPart.length() > 0) {
                     cellText.append(":").append(symptomsPart);
                 }
