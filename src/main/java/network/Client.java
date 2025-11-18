@@ -43,7 +43,22 @@ public class Client {
         }
 
     }
+    public boolean sendMetadataJson(String json, String ip, int port) {
+        try (Socket socket = new Socket(ip, port);
+             PrintWriter writer = new PrintWriter(
+                     new OutputStreamWriter(socket.getOutputStream()), true)) {
 
+            writer.println(json);
+            writer.flush();
+
+            System.out.println("✅ Metadata JSON sent to server.");
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
     public Boolean isConnected(){
         if(socket == null){
             return false;

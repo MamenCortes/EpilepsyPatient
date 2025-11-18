@@ -1,10 +1,13 @@
 package ui;
 
 import ceu.biolab.BITalino.BITalino;
+import ceu.biolab.BITalino.BITalinoException;
 import ceu.biolab.BITalino.Frame;
 import org.junit.Test;
+import pojos.Signal;
 
 import java.io.*;
+import java.time.LocalDateTime;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.ZipFile;
@@ -20,9 +23,9 @@ public class SignalRecorderService {
 
     private File csvTempFile;
     private File zipFile;
-
+    private volatile boolean recordingInterrupted = false;
     private Thread saveThread;
-
+    private int fs = 1000; // Sampling frequency
     private final BlockingQueue<Frame> frameQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<Frame> saveQueue = new LinkedBlockingQueue<>();
 
@@ -30,7 +33,7 @@ public class SignalRecorderService {
         try {
             System.out.println("🔌 Conectando al BITalino...");
             bitalino = new BITalino();
-            bitalino.open(MAC_ADDRESS, 1000);
+            bitalino.open(MAC_ADDRESS, fs);
             System.out.println("✅ Conexión establecida.");
 
             int[] channelsToRead = {1, 2, 3, 4};
@@ -78,6 +81,19 @@ public class SignalRecorderService {
         return zipFile;
     }
 
+    public Signal buildSignalForPatient() {
+        if (zipFile == null) {
+            throw new IllegalStateException("zipFile is null. Did you call stopRecording() and compressToZip()?");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        int timeStamp = 0; // Placeholder for timestamp
+        return new Signal(String.valueOf(now), fs, zipFile, String.valueOf(timeStamp));
+    }
+
+    public boolean isRecordingInterrupted() {
+        return recordingInterrupted;
+    }
+
     // ------------------------ THREADS ------------------------
 
     private class ReadThread implements Runnable {
@@ -97,12 +113,39 @@ public class SignalRecorderService {
                         }
                     }
                 }
-            } catch (Exception e) { e.printStackTrace(); }
+            } catch (Exception e) {   System.out.println("❌ BITalino disconnected unexpectedly!");
+                try {
+                    handleBitalinoDisconnection();
+                } catch (BITalinoException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
 
             System.out.println("🔴 [ReadThread] Finalizado");
         }
     }
 
+    private void handleBitalinoDisconnection() throws BITalinoException {
+        isRecording = false;
+        try {
+            if (bitalino != null) {
+                bitalino.stop();
+                bitalino.close();
+            }
+        }catch (Exception ignored) {}
+
+        System.out.println("📁 Saving partial recording...");
+
+        try {
+                saveThread.join(); // esperar a que guarde todo lo que ya tenía
+                zipFile = compressToZip(csvTempFile);
+                System.out.println("📦 Partial ZIP created: " + zipFile.getAbsolutePath());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        recordingInterrupted= true;
+    }
     private class AnalyzeThread implements Runnable {
         @Override
         public void run() {
