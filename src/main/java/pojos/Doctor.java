@@ -157,6 +157,26 @@ public class Doctor {
     }
 
     /**
+     * Converts this {@code Doctor} into a {@link JsonObject}. The JSON object specifies all public fields
+     * except the {@code active} field //TODO: por que no lo especifica?
+     *
+     * @return  a JSON representation of this doctor
+     *
+     * @see JsonObject
+     */
+    public JsonObject toJason() {
+        JsonObject json = new JsonObject();
+        json.addProperty("id", id);
+        json.addProperty("name", name);
+        json.addProperty("surname", surname);
+        json.addProperty("contact", phone);
+        json.addProperty("email", email);
+        json.addProperty("department", department);
+        json.addProperty("speciality", speciality);
+        return json;
+    }
+
+    /**
      * Utility method to verify if the {@code Doctor} object is empty or has specific values
      * //TODO: por que este metodo?
      *

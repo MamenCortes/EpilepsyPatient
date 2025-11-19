@@ -36,7 +36,7 @@ public class Client {
 
         try {
             //socket = new Socket("localhost", 9009);
-            socket = new Socket(ip, port);
+            if(socket == null)socket = createSocket(ip, port);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(
                     new InputStreamReader(socket.getInputStream())
@@ -49,8 +49,12 @@ public class Client {
             //if(!socket.isConnected()){appMain.onServerDisconnected();}
             return false;
         }
-
     }
+
+    protected Socket createSocket(String ip, int port) throws IOException {
+        return new Socket(ip, port);
+    }
+
     public boolean sendMetadataJson(String json, String ip, int port) {
         try (Socket socket = new Socket(ip, port);
              PrintWriter writer = new PrintWriter(
@@ -82,12 +86,6 @@ public class Client {
 
                     if (type.equals("STOP_CLIENT")) {
                         System.out.println("Server requested shutdown");
-
-                        //Send stop received (ACK)
-                        JsonObject response = new JsonObject();
-                        response.addProperty("type", "STOP_CLIENT_RECEIVED");
-                        out.println(gson.toJson(response));
-                        //stop client
                         stopClient(false);
                         break;
                     }
@@ -105,7 +103,8 @@ public class Client {
                 }
             } catch (IOException ex) {
                 System.out.println("Server connection closed: " + ex.getMessage());
-                //if(running) appMain.onServerDisconnected();
+                //In case the connection is closed without the server asking for it first
+                stopClient(false);
             }
         });
 
@@ -147,12 +146,8 @@ public class Client {
         releaseResources(out, in, socket);
     }
 
-
-    //TODO: change to send Exception instead of MAP
-    public Map<String, Object> login(String email, String password) throws IOException, InterruptedException {
+    public void login(String email, String password) throws IOException, InterruptedException, LogInError {
         //String message = "LOGIN;" + email + ";" + password;
-        Map<String, Object> login = new HashMap<>();
-
         Map<String, Object> data = new HashMap<>();
         data.put("email", email);
         data.put("password", password);
@@ -165,10 +160,7 @@ public class Client {
         String jsonMessage = gson.toJson(message);
         out.println(jsonMessage); // send JSON message
 
-        // Read the response
-        //String responseLine = in.readLine();
         JsonObject response;
-
         do {
             response = responseQueue.take();
         } while (!response.get("type").getAsString().equals("LOGIN_RESPONSE"));
@@ -177,62 +169,41 @@ public class Client {
         // Check response
         String status = response.get("status").getAsString();
         if (status.equals("SUCCESS")) {
-            login.put("login", true);
             JsonObject userJson = response.getAsJsonObject("data");
             int id = userJson.get("id").getAsInt();
             String role = userJson.get("role").getAsString();
             System.out.println("Login successful!");
             System.out.println("User ID: " + id + ", Role: " + role);
 
-            if(role.equals("Patient")){
-                User user = new User(id, email, password, role);
-                appMain.user = user;
+            User user = new User(id, email, password, role);
+            appMain.user = user;
 
-                //Request doctor data
-                message.clear();
-                data.clear();
-                message.put("type", "REQUEST_PATIENT_BY_EMAIL");
-                data.put("user_id", user.getId());
-                data.put("email", user.getEmail());
-                message.put("data", data);
+            //Request doctor data
+            message.clear();
+            data.clear();
+            message.put("type", "REQUEST_PATIENT_BY_EMAIL");
+            data.put("user_id", user.getId());
+            data.put("email", user.getEmail());
+            message.put("data", data);
 
-                jsonMessage = gson.toJson(message);
-                out.println(jsonMessage); // send JSON message
+            jsonMessage = gson.toJson(message);
+            out.println(jsonMessage); // send JSON message
 
-                // Read the response
-                do {
-                    response = responseQueue.take();
-                } while (!response.get("type").getAsString().equals("REQUEST_PATIENT_BY_EMAIL_RESPONSE"));
-                // Check response
-                status = response.get("status").getAsString();
-                if (status.equals("SUCCESS")) {
-                    Patient patient = Patient.fromJason(response.getAsJsonObject("patient"));
-                    System.out.println(patient);
-                    appMain.patient = patient;
-                    login.put("login", true);
-                    login.put("message", "Login successful!");
-                    login.put("patient", patient);
-                    login.put("user", user);
-                    return login;
-                }
-                login.put("login", false);
-                login.put("message", response.get("message").getAsString());
-                login.put("patient", null);
-                login.put("user", null);
-                return login;
-            }else{
-                login.put("login", false);
-                login.put("message", "Unauthorized access");
-                login.put("patient", null);
-                login.put("user", null);
-                return login;
+            // Read the response
+            do {
+                response = responseQueue.take();
+            } while (!response.get("type").getAsString().equals("REQUEST_PATIENT_BY_EMAIL_RESPONSE"));
+            // Check response
+            status = response.get("status").getAsString();
+            if (!status.equals("SUCCESS")) {
+                throw new LogInError(response.get("message").getAsString());
             }
+
+            Patient patient = Patient.fromJason(response.getAsJsonObject("patient"));
+            System.out.println(patient);
+            appMain.patient = patient;
         } else {
-            login.put("login", false);
-            login.put("message", response.get("message").getAsString());
-            login.put("patient", null);
-            login.put("user", null);
-            return login;
+            throw new LogInError(response.get("message").getAsString());
         }
     }
 
@@ -262,14 +233,6 @@ public class Client {
             doctor = Doctor.fromJason(response.getAsJsonObject("doctor"));
         }
         return doctor;
-    }
-
-
-    public static void main(String args[]) throws IOException {
-        System.out.println("Starting Client...");
-        //"localhost", 9009
-        //Client client = new Client("localhost", 9009, new Application());
-        //client.stopClient();
     }
 
     private static void releaseResources(PrintWriter printWriter, BufferedReader in, Socket socket) {

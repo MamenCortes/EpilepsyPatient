@@ -82,12 +82,14 @@ public class Patient {
         this.dateOfBirth = LocalDate.of(1900, 1, 1);
         this.signalRecordingsList = new ArrayList<Signal>();
         this.symptomsList = new ArrayList<Report>();
+        this.id = 0;
+        this.doctor_id = 0;
     }
 
     @Override
     public String toString() {
         return "Patient{" +
-                "id=" + id +
+                "id=" + id + '\''+
                 "name='" + name + '\'' +
                 ", surname='" + surname + '\'' +
                 ", email='" + email + '\'' +
@@ -207,6 +209,27 @@ public class Patient {
         patient.setGender(jason.get("gender").getAsString());
         patient.setDoctor_id(jason.get("doctorId").getAsInt());
         return patient;
+    }
+
+    /**
+     * Converts this {@code Patient} into a {@link JsonObject}. The JSON object specifies all public fields
+     * except the {@code active} field //TODO: por que no lo especifica?
+     *
+     * @return  a JSON representation of this patient
+     *
+     * @see JsonObject
+     */
+    public JsonObject toJason() {
+        JsonObject jason = new JsonObject();
+        jason.addProperty("id", id);
+        jason.addProperty("name", name);
+        jason.addProperty("surname", surname);
+        jason.addProperty("email", email);
+        jason.addProperty("contact", phone);
+        jason.addProperty("dateOfBirth", dateOfBirth.toString());
+        jason.addProperty("gender", gender);
+        jason.addProperty("doctorId", doctor_id);
+        return jason;
     }
 
 }

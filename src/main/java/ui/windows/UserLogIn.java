@@ -11,6 +11,7 @@ import java.util.Objects;
 import javax.swing.*;
 
 import net.miginfocom.swing.MigLayout;
+import network.LogInError;
 import pojos.Patient;
 import pojos.User;
 import ui.components.*;
@@ -220,22 +221,12 @@ public class UserLogIn extends JPanel implements ActionListener{
         if(!email.isBlank() && !password.isBlank()) {
 
             try {
-                Map<String, Object> response = appMain.client.login(email, password);
-                Boolean success =  (Boolean) response.get("login");
-                System.out.println(success);
-                if(success) {
-                    appMain.patient = (Patient) response.get("patient");
-                    appMain.user = (User) response.get("user");
-                    return true;
-                }else{
-                    showErrorMessage(response.get("message").toString());
-                    //showErrorMessage("Incorrect email or password");
-                }
-            } catch (IOException | InterruptedException e) {
+                appMain.client.login(email, password);
+                return true;
+            } catch (IOException | InterruptedException | LogInError e) {
                 showErrorMessage(e.getMessage());
+                return false;
             }
-            return false;
-
         }else {
             showErrorMessage("Complete all fields");
             return false;
