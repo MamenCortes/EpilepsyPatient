@@ -43,7 +43,7 @@ public class SymptomCalendar {
                 .toArray(String[]::new);
         JComboBox<String> monthCombo = new JComboBox<>(months);
         monthCombo.setSelectedIndex(LocalDate.now().getMonthValue() - 1);
-        monthCombo.addActionListener(e -> updateTable(monthCombo.getSelectedIndex() + 1));
+        //monthCombo.addActionListener(e -> updateTable(monthCombo.getSelectedIndex() + 1));
 
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.add(new JLabel("Select month:"));
@@ -145,7 +145,7 @@ public class SymptomCalendar {
     }
 
     // Custom renderer
-    static class SymptomCellRenderer extends JPanel implements javax.swing.table.TableCellRenderer {
+    public static class SymptomCellRenderer extends JPanel implements javax.swing.table.TableCellRenderer {
         private final Map<String, Color> symptomColors;
         private JLabel dayLabel;
 
