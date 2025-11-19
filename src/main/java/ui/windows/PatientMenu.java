@@ -76,8 +76,8 @@ public class PatientMenu extends MenuTemplate {
                     doctor = appMenu.client.getDoctorFromPatient(appMenu.patient.getDoctor_id(), appMenu.patient.getId(), appMenu.user.getId());appMenu.changeToPanel(doctorInfoPanel);
                     System.out.println("Doctor = "+doctor);
                     appMenu.doctor = doctor;
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
+                } catch (IOException | InterruptedException ex) {
+                    JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
             System.out.println("Doctor ="+ doctor);

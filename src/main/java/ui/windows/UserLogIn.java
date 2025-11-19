@@ -80,7 +80,7 @@ public class UserLogIn extends JPanel implements ActionListener{
                 int width = getWidth();
                 int height = getHeight();
 
-                // 🔹 Degradado de izquierda a derecha (puedes cambiarlo a vertical si quieres)
+                // Degradado de izquierda a derecha (puedes cambiarlo a vertical si quieres)
                 GradientPaint gradient = new GradientPaint(0, 0, Application.light_purple, 0, getHeight(), Application.light_turquoise);
 
                 g2d.setPaint(gradient);
@@ -231,7 +231,7 @@ public class UserLogIn extends JPanel implements ActionListener{
                     showErrorMessage(response.get("message").toString());
                     //showErrorMessage("Incorrect email or password");
                 }
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 showErrorMessage(e.getMessage());
             }
             return false;
