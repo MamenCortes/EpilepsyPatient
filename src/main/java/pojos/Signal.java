@@ -1,16 +1,18 @@
 package pojos;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import ui.SignalRecorderService;
+
+import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Signal {
     private String comments;
     private int samplingFrequency;
-    private String ECG;
-    private String ACCx;
-    private String ACCy;
-    private String ACCz;
     private String timeStamp;
+    private File rawSignal;
 
     public String getDate() {
         return date;
@@ -22,12 +24,9 @@ public class Signal {
 
     private String date;
 
-    public Signal(String date, int samplingFrequency, String ECG, String ACCx, String ACCy, String ACCz, String timeStamp) {
+    public Signal(String date, int samplingFrequency, File rawSignal, String timeStamp) {
         this.samplingFrequency = samplingFrequency;
-        this.ECG = ECG;
-        this.ACCx = ACCx;
-        this.ACCy = ACCy;
-        this.ACCz = ACCz;
+        this.rawSignal = rawSignal;
         this.timeStamp = timeStamp;
         this.comments = "";
         this.date = date;
@@ -36,10 +35,7 @@ public class Signal {
     public Signal() {
         super();
         this.samplingFrequency = 100;
-        this.ECG = "";
-        this.ACCx = "";
-        this.ACCy = "";
-        this.ACCz = "";
+        this.rawSignal = null;
         this.timeStamp = "";
         this.comments = "";
         this.date = DateTimeFormatter.ofPattern("dd/MM/yyyy").format(LocalDateTime.now());
@@ -67,22 +63,6 @@ public class Signal {
         this.samplingFrequency = samplingFrequency;
     }
 
-    public String getECG() {
-        return ECG;
-    }
-
-    public void setECG(String ECG) {
-        this.ECG = ECG;
-    }
-
-    public String getACCx() {
-        return ACCx;
-    }
-
-    public void setACCx(String ACCx) {
-        this.ACCx = ACCx;
-    }
-
     public String getTimeStamp() {
         return timeStamp;
     }
@@ -91,19 +71,29 @@ public class Signal {
         this.timeStamp = timeStamp;
     }
 
-    public String getACCy() {
-        return ACCy;
+   public File getRawSignal() {
+        return rawSignal;
     }
+    public void setRawSignal(File rawSignal) {
+        this.rawSignal = rawSignal;
+   }
 
-    public void setACCy(String ACCy) {
-        this.ACCy = ACCy;
+    public static class SignalMetadataDTO {
+        public Integer patientId;
+        public String comments;
+        public int samplingFrequency;
+        public String timestamp;  // en ISO string
+        public String zipFileName;
     }
+    public String buildSignalMetadataJson(Signal signal,int patientId) {
+        SignalMetadataDTO dto = new SignalMetadataDTO();
+        dto.patientId = patientId;
+        dto.comments = signal.getComments();
+        dto.samplingFrequency = signal.getSamplingFrequency();
+        dto.timestamp = signal.getTimeStamp().toString();
+        dto.zipFileName = signal.getRawSignal().getName();
 
-    public String getACCz() {
-        return ACCz;
-    }
-
-    public void setACCz(String ACCz) {
-        this.ACCz = ACCz;
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        return gson.toJson(dto);
     }
 }

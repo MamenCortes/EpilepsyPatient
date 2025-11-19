@@ -1,10 +1,39 @@
 package pojos;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 
+/**
+ * The {@code Patient} class represents a patient entity.
+ * A {@code Patient} object encapsulates the necessary information for:
+ * <ul>
+ *     <li> The unique identifier of the patient</li>
+ *     <li> The patient's name</li>
+ *     <li> The patient's surname</li>
+ *     <li> The patient's unique email address</li>
+ *     <li> The patient's contact information</li>
+ *     <li> The patient's date of birth</li>
+ *     <li> The patient's gender</li>
+ *     <li> Foreign key referencing the assigned {@link Doctor} (doctorId)</li>
+ *     <li> List of {@code Signal} instances associated to the Patient</li>
+ *     <li> List of {@code Report} intances associated to the Patient</li>
+ * </ul>
+ * <p>
+ *     Instances of this class can be created either manually by the application or automatically
+ *     reconstructed from database queries or from JSON files received over the network. Conversion utilities
+ *     are provided inside the class {@link #fromJason(JsonObject)}
+ * </p>
+ * <p>
+ *     An important point to consider is that certain field values will be validated externally when
+ *     necessary (e.g., email) for correctness before being assigned to {@code Patient} instance.
+ * </p>
+ *
+ * @author MamenCortes
+ */
 public class Patient {
 
     private Integer id;
@@ -19,7 +48,17 @@ public class Patient {
     private ArrayList<Report> symptomsList;
 
 
-
+    /**
+     * Creates a {@code Patient} instance with all fields specified except for the id field to create
+     * an entity.
+     *
+     * @param name      the patient's name
+     * @param surname   the patient's surname
+     * @param email     the patient's email address
+     * @param phone     the patient's contact information (phone number)
+     * @param gender    the patient's gender
+     * @param dateOfBirth   the patient's date of birth
+     */
     public Patient(String name, String surname, String email, Integer phone, String gender, LocalDate dateOfBirth) {
         this.name = name;
         this.surname = surname;
@@ -31,6 +70,9 @@ public class Patient {
         this.symptomsList = new ArrayList<Report>();
     }
 
+    /**
+     * Creates a default {@code Patient} with field values either specified or empty.
+     */
     public Patient() {
         this.name = "";
         this.surname = "";
@@ -146,6 +188,14 @@ public class Patient {
         this.doctor_id = doctor_id;
     }
 
+    /**
+     * Creates a new {@code Patient} instance from a {@link JsonObject}.
+     *
+     * @param jason  the JSON object containing this {@code Patient} data
+     * @return  a {@code Patient} instance from the {@link JsonObject}
+     *
+     * @see JsonObject
+     */
     public static Patient fromJason(JsonObject jason) {
         Patient patient = new Patient();
         patient.setId(jason.get("id").getAsInt());

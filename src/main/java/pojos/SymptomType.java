@@ -1,5 +1,11 @@
 package pojos;
 
+/**
+ * The {@code Symptom} enumerate class describes the different symptom categories that can be associated
+ * with a patient.
+ *
+ * @author MamenCortes
+ */
 public enum SymptomType {
     Muscle_Stiffness,
     Trouble_Breathing,

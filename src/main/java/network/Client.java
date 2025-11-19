@@ -15,7 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Client{
+public class Client {
     Socket socket;
     PrintWriter out;
     BufferedReader in;
@@ -51,7 +51,22 @@ public class Client{
         }
 
     }
+    public boolean sendMetadataJson(String json, String ip, int port) {
+        try (Socket socket = new Socket(ip, port);
+             PrintWriter writer = new PrintWriter(
+                     new OutputStreamWriter(socket.getOutputStream()), true)) {
 
+            writer.println(json);
+            writer.flush();
+
+            System.out.println("✅ Metadata JSON sent to server.");
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
     /// Start a thread that listens for messages from the server
     /// If the server sends STOP_CLIENT, the connection is closed and also the app???
     public void startListener() {
@@ -272,5 +287,6 @@ public class Client{
             System.out.println("Error closing socket"+ex.getMessage());
         }
     }
+
 }
 
