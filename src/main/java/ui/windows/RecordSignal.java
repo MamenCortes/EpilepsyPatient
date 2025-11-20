@@ -98,7 +98,7 @@ public class RecordSignal extends JPanel implements ActionListener {
         errorMessage.setFont(contentFont);
         errorMessage.setForeground(Color.red);
         errorMessage.setText("Error message test");
-        errorMessage.setVisible(true);
+        errorMessage.setVisible(false);
 
         okButton = new MyButton();
         okButton.addActionListener(this);
@@ -123,7 +123,7 @@ public class RecordSignal extends JPanel implements ActionListener {
         errorMessage2.setFont(contentFont);
         errorMessage2.setForeground(Color.red);
         errorMessage2.setText("Error message test");
-        errorMessage2.setVisible(true);
+        errorMessage2.setVisible(false);
 
         buttonsLayout = new CardLayout();
         buttonStack = new JPanel(buttonsLayout);
@@ -238,7 +238,7 @@ public class RecordSignal extends JPanel implements ActionListener {
                     //TODO: call functions save signals
 
                     Thread.sleep(3000);
-                    return false;
+                    return true;
                 } catch (Exception e) {
                     e.printStackTrace();
                     return false;

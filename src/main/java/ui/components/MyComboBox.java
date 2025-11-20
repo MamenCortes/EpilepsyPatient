@@ -25,7 +25,6 @@ public class MyComboBox<E> extends JComboBox<E> {
     private static final long serialVersionUID = 1696707481994733631L;
     private Color backgroundColor = new Color(230, 245, 241);
     private boolean mouseOver;
-    private String hint = "";
 
     public MyComboBox() {
         installUI();
