@@ -178,8 +178,8 @@ public class Application extends JFrame {
 
             JOptionPane.showMessageDialog(
                     null,
-                    "La conexión con el servidor se ha perdido.",
-                    "Error de conexión",
+                    "The conexion with the server was interrupted.",
+                    "Conexion error",
                     JOptionPane.ERROR_MESSAGE
             );
 

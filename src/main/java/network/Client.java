@@ -36,7 +36,7 @@ public class Client {
 
         try {
             //socket = new Socket("localhost", 9009);
-            if(socket == null)socket = createSocket(ip, port);
+            socket = createSocket(ip, port);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(
                     new InputStreamReader(socket.getInputStream())
