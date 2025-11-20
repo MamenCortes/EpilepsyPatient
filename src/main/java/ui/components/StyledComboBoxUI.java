@@ -31,7 +31,10 @@ import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.plaf.basic.BasicComboPopup;
 import javax.swing.plaf.basic.ComboPopup;
 
-
+/**
+ * Custom UI for a styled combo box component.
+ * Applies custom colors, fonts, borders and hover effects to a {@link MyComboBox}.
+ */
 public class StyledComboBoxUI extends BasicComboBoxUI{
 
     private float location;
@@ -39,7 +42,12 @@ public class StyledComboBoxUI extends BasicComboBoxUI{
     private MyComboBox combo;
     private Color backgroundColor = new Color(230, 245, 241);
     private Color foreGroundColor = Color.decode("#7A8C8D");
-
+    /**
+     * Creates a new StyledComboBoxUI applying custom appearance settings
+     * to the specified combo box.
+     *
+     * @param combo the combo box to style
+     */
     public StyledComboBoxUI(MyComboBox combo) {
         this.combo = combo;
         combo.setBackground(backgroundColor);

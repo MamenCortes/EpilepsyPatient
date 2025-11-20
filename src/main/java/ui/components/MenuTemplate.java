@@ -3,56 +3,83 @@ package ui.components;
 import javax.swing.*;
 
 import net.miginfocom.swing.MigLayout;
+import ui.windows.Application;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
-public class MenuTemplate extends JPanel implements ActionListener{
+/**
+ * Abstract template panel that provides a common UI structure
+ * for menus across the application.
+ * <p>
+ * It includes a gradient cover panel with a logo and title, and a customizable menu section containing buttons.
+ * The distribution of the buttons is adjusted based on the number of buttons.
+ */
+public class MenuTemplate extends JPanel implements ActionListener {
 
     private static final long serialVersionUID = 1L;
-
-    protected PanelCoverForMenu panelCoverMenu;
+    protected JPanel coverPanel;
     protected PanelMenu panelMenu;
     protected ArrayList<JButton> buttons;
     private final Color backgroundColor2 = Color.WHITE;
 
-
+    /**
+     * Creates an empty menu template. Subclasses must call {@link #init(ImageIcon, String)}
+     * to initialize the graphical content.
+     */
     public MenuTemplate() {
         this.setLayout(new MigLayout("fill, inset 0, gap 0", "[][][][][]", "[30%][20%][20%][20%][20%]"));
         buttons = new ArrayList<JButton>();
     }
 
+    /**
+     * Initializes the menu layout by creating the cover panel with a logo and title,
+     * and building the button-based menu section.
+     *
+     * @param logo         the logo image shown in the header
+     * @param company_name the company or panel title text
+     */
     protected void init(ImageIcon logo, String company_name) {
-        panelCoverMenu = new PanelCoverForMenu(logo, company_name);
+        coverPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g); // pinta el fondo base
+
+                Graphics2D g2d = (Graphics2D) g.create();
+                int width = getWidth();
+                int height = getHeight();
+
+                // Degradado de izquierda a derecha (puedes cambiarlo a vertical si quieres)
+                GradientPaint gradient = new GradientPaint(0, 0, Application.light_purple, 0, getHeight(), Application.light_turquoise);
+
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, width, height);
+                g2d.dispose();
+            }
+        };
+        initCover(logo, company_name);
+
         panelMenu = new PanelMenu(buttons);
         for (JButton jButton : buttons) {
             jButton.addActionListener(this);
         }
         panelMenu.setBackground(backgroundColor2);
-        this.add(panelCoverMenu, "cell 0 0 5 1,grow");
+        this.add(coverPanel, "cell 0 0 5 1,grow");
         this.add(panelMenu, "cell 0 1 5 5,grow");
     }
 
-    public PanelCoverForMenu getPanelCoverMenu() {
-        return panelCoverMenu;
-    }
+    private void initCover(ImageIcon logo, String company_name) {
+        coverPanel.setLayout(new MigLayout("fill", "2%[10%]2%[90%]", ""));
+        JLabel picLabel = new JLabel();
+        picLabel.setIcon(logo);
+        coverPanel.add(picLabel, "cell 0 0,align center");
 
-    public void setPanelCoverMenu(PanelCoverForMenu panelCoverMenu) {
-        this.panelCoverMenu = panelCoverMenu;
-    }
-
-    public PanelMenu getPanelMenu() {
-        return panelMenu;
-    }
-
-    public void setPanelMenu(PanelMenu panelMenu) {
-        this.panelMenu = panelMenu;
-    }
-
-    public ArrayList<JButton> getButtons() {
-        return buttons;
+        JLabel title = new JLabel(company_name);
+        title.setFont(new Font("sansserif", 1, 20));
+        title.setForeground(Application.dark_purple);
+        coverPanel.add(title, "cell 1 0, align left, growx 0");
     }
 
     @Override
