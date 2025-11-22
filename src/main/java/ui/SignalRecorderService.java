@@ -29,13 +29,18 @@ public class SignalRecorderService {
     private File zipFile;
     private volatile boolean recordingInterrupted = false;
     private Thread saveThread;
-    private int fs = 1000; // Sampling frequency
+    private final int fs = 1000; // Sampling frequency
     private final BlockingQueue<Frame> frameQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<Frame> saveQueue = new LinkedBlockingQueue<>();
 
     public SignalRecorderService(String MAC_ADDRESS) {
         SignalRecorderService.MAC_ADDRESS = MAC_ADDRESS;
     }
+
+    public int getFs() {
+        return fs;
+    }
+
     public void startRecording() {
         try {
             System.out.println("🔌 Conectando al BITalino...");
@@ -270,7 +275,7 @@ public class SignalRecorderService {
 
     @Test
     public void testSaveThreadCreatesCSV() throws Exception {
-        SignalRecorderService service = new SignalRecorderService();
+        SignalRecorderService service = new SignalRecorderService("00:00:00:00:00:00");
 
         // Arrancamos solo el SaveThread
         Thread saveThread = new Thread(service.new SaveThread());
@@ -297,7 +302,7 @@ public class SignalRecorderService {
     }
     @Test
     public void testCompressToZip() throws Exception {
-        SignalRecorderService service = new SignalRecorderService();
+        SignalRecorderService service = new SignalRecorderService("00:00:00:00:00:00");
 
         // Crear archivo temporal simulado
         File temp = File.createTempFile("test_", ".csv");

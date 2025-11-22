@@ -1,12 +1,7 @@
 package ui.windows;
 
-import network.Client;
-import network.SendSignalMetadataToServer;
-import network.SendZipToServer;
 import pojos.Doctor;
 import pojos.ModelManager;
-import pojos.Signal;
-import ui.SignalRecorderService;
 import ui.components.MenuTemplate;
 import ui.components.MyButton;
 import javax.swing.*;

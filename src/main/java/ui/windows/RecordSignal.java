@@ -1,5 +1,6 @@
 package ui.windows;
 
+import com.google.gson.JsonObject;
 import net.miginfocom.swing.MigLayout;
 import pojos.Signal;
 import ui.SignalRecorderService;
@@ -10,7 +11,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.util.Base64;
 
 //TODO: al parar de grabar que pregunte si estás seguro
 //TODO: feedback sobre estableciendo la conexión y mandando datos
@@ -27,7 +32,8 @@ public class RecordSignal extends JPanel implements ActionListener {
     private ImageIcon recordingImg = new ImageIcon(getClass().getResource("/icons/ecg-gif128.png"));
     private ImageIcon uploadingGif = new ImageIcon(getClass().getResource("/icons/uploading128.gif"));
     private ImageIcon uploadedImg = new ImageIcon(getClass().getResource("/icons/check128.png"));
-
+    public SignalRecorderService recorderService;
+    public File lastZipFile;
     //Components
     JLabel errorMessage;
     JLabel errorMessage2;
@@ -178,12 +184,13 @@ public class RecordSignal extends JPanel implements ActionListener {
             showFeedbackMessage(errorMessage2, "Clic start to start recording");
             String macAdd = iptxtField.getText();
             System.out.println(macAdd);
-
-            //TODO: Call functions to Connect to bitalino and manage errors
-            SignalRecorderService recorderService = new SignalRecorderService(macAdd);
+            recorderService = new SignalRecorderService(macAdd);
             recorderService.startRecording();
+
             if (recorderService.isRecording()) {
                 cardLayout.show(cardPanel, "Panel2");
+            } else {
+                showFeedbackMessage(errorMessage, "Connection failed");
             }
 
         }else if(e.getSource() == back2MenuBt){
@@ -205,7 +212,7 @@ public class RecordSignal extends JPanel implements ActionListener {
                     buttonsLayout.show(buttonStack, "NULL");
                     image.setIcon(uploadingGif);
                     showFeedbackMessage(errorMessage2, "Saving recording...");
-                    // 2) Lanzar proceso en background
+                    recording= false;
                     startSavingProcess();
                 }
             }
@@ -239,8 +246,22 @@ public class RecordSignal extends JPanel implements ActionListener {
             @Override
             protected Boolean doInBackground() {
                 try {
-                    //TODO: call functions save signals
-
+                    recorderService.stopRecording();
+                    lastZipFile = recorderService.getZipFile();
+                    JsonObject request = new JsonObject();
+                    request.addProperty("type", "UPLOAD_SIGNAL");
+                    JsonObject metadata = new JsonObject();
+                    metadata.addProperty("patient_id", appMain.patient.getId());
+                    metadata.addProperty("sampling_rate", recorderService.getFs());
+                    metadata.addProperty("date", LocalDateTime.now().toString());
+                    request.add("metadata", metadata);
+                    request.addProperty("compression", "zip-base64");
+                    request.addProperty("filename", lastZipFile.getName());
+                    byte[] zipBytes = Files.readAllBytes(lastZipFile.toPath());
+                    String base64Zip = Base64.getEncoder().encodeToString(zipBytes);
+                    request.addProperty("data", base64Zip);
+                    String ip = iptxtField.getText();
+                    appMain.client.sendJsonToServer(String.valueOf(request),ip,9000);
                     Thread.sleep(3000);
                     return true;
                 } catch (Exception e) {
