@@ -2,6 +2,7 @@ package ui.windows;
 
 import net.miginfocom.swing.MigLayout;
 import pojos.Signal;
+import ui.SignalRecorderService;
 import ui.components.MyButton;
 import ui.components.MyTextField;
 
@@ -172,6 +173,7 @@ public class RecordSignal extends JPanel implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        SignalRecorderService recorderService =new  SignalRecorderService(macAdd);
         if(e.getSource() == okButton){
             showFeedbackMessage(errorMessage, "Connecting to Bitalino...");
             showFeedbackMessage(errorMessage2, "Clic start to start recording");
@@ -179,9 +181,11 @@ public class RecordSignal extends JPanel implements ActionListener {
             System.out.println(macAdd);
 
             //TODO: Call functions to Connect to bitalino and manage errors
+            recorderService.startRecording();
+            if (recorderService.isRecording()) {
+                cardLayout.show(cardPanel, "Panel2");
+            }
 
-            //If connected, change to next panel
-            cardLayout.show(cardPanel, "Panel2");
         }else if(e.getSource() == back2MenuBt){
             cardLayout.show(cardPanel, "Panel1");
             resetPanel();
@@ -202,6 +206,7 @@ public class RecordSignal extends JPanel implements ActionListener {
                     image.setIcon(uploadingGif);
                     showFeedbackMessage(errorMessage2, "Saving recording...");
                     // 2) Lanzar proceso en background
+                    recorderService.stopRecording();
                     startSavingProcess();
                 }
             }

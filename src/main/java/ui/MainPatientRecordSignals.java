@@ -16,8 +16,8 @@ public class MainPatientRecordSignals {
         System.out.println("2️⃣  Hilo analizador → Procesa señales y crea JSON");
         System.out.println("3️⃣  Hilo emisor   → Envía al servidor (simulado)");
         System.out.println("--------------------------------------------");
-
-        SignalRecorderService recorder = new SignalRecorderService();
+        String MacAddress = "20:16:11:26:69:56"; // Reemplaza con la dirección MAC de tu dispositivo BITalino
+        SignalRecorderService recorder = new SignalRecorderService(MacAddress );
 
         // Inicia la grabación
         recorder.startRecording();

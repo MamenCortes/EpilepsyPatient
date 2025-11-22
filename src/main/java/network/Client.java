@@ -188,6 +188,16 @@ public class Client {
         return doctor;
     }
 
+    public void sendJsonToServer(String json, String ip, int port) throws Exception {
+        Socket socket = new Socket(ip, port);
+
+        PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+        pw.println(json);
+
+        pw.flush();
+        pw.close();
+        socket.close();
+    }
 
     public static void main(String args[]) throws IOException {
         System.out.println("Starting Client...");

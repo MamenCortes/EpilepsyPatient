@@ -3,11 +3,15 @@ package ui;
 import ceu.biolab.BITalino.BITalino;
 import ceu.biolab.BITalino.BITalinoException;
 import ceu.biolab.BITalino.Frame;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.junit.Test;
 import pojos.Signal;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.ZipFile;
@@ -16,10 +20,10 @@ import static org.junit.Assert.*;
 
 public class SignalRecorderService {
 
-    private static final String MAC_ADDRESS = "98:D3:C1:FD:2F:EA";
+    private static  String MAC_ADDRESS ;
 
     private BITalino bitalino;
-    private volatile boolean isRecording = false;
+    private boolean isRecording = false;
 
     private File csvTempFile;
     private File zipFile;
@@ -29,6 +33,9 @@ public class SignalRecorderService {
     private final BlockingQueue<Frame> frameQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<Frame> saveQueue = new LinkedBlockingQueue<>();
 
+    public SignalRecorderService(String MAC_ADDRESS) {
+        SignalRecorderService.MAC_ADDRESS = MAC_ADDRESS;
+    }
     public void startRecording() {
         try {
             System.out.println("🔌 Conectando al BITalino...");
@@ -92,6 +99,10 @@ public class SignalRecorderService {
 
     public boolean isRecordingInterrupted() {
         return recordingInterrupted;
+    }
+
+    public boolean isRecording() {
+        return isRecording;
     }
 
     // ------------------------ THREADS ------------------------
@@ -231,6 +242,32 @@ public class SignalRecorderService {
             return null;
         }
     }
+    public static String zipToBase64(File zipFile) throws Exception {
+        byte[] bytes = Files.readAllBytes(zipFile.toPath());
+        return Base64.getEncoder().encodeToString(bytes);
+    }
+
+    public String buildUploadSignalJson(File zipFile, int patientId, int samplingRate, int durationSeconds, String[] channels) throws Exception {
+
+        UploadSignalRequest req = new UploadSignalRequest();
+
+        // --- Metadata ---
+        req.metadata = new UploadSignalRequest.Metadata();
+        req.metadata.patient_id = patientId;
+        req.metadata.sampling_rate = samplingRate;
+        req.metadata.duration_seconds = durationSeconds;
+        req.metadata.channels = channels;
+        req.metadata.timestamp = LocalDateTime.now().toString();
+
+        // --- ZIP contenido ---
+        req.filename = zipFile.getName();
+        req.data = zipToBase64(zipFile);
+
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        return gson.toJson(req);
+    }
+
+
     @Test
     public void testSaveThreadCreatesCSV() throws Exception {
         SignalRecorderService service = new SignalRecorderService();
@@ -279,6 +316,23 @@ public class SignalRecorderService {
         System.out.println(zip.getAbsolutePath());
 
     }
+    public class UploadSignalRequest {
+        public String type = "UPLOAD_SIGNAL";
+        public Metadata metadata;
+        public String compression = "zip-base64";
+        public String filename;
+        public String data; // ZIP en base64
+
+        public static class Metadata {
+            public int patient_id;
+            public int sampling_rate;
+            public int duration_seconds;
+            public String[] channels;
+            public String timestamp;
+        }
+    }
+
+
 
 }
 

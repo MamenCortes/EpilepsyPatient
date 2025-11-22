@@ -31,7 +31,6 @@ public class PatientMenu extends MenuTemplate {
     private NewSymptomPanel newSymptomPanel;
     private RecordSignal recordSignalPanel;
     private String company_name;
-    private final SignalRecorderService recorderService = new SignalRecorderService();
 
     public PatientMenu(Application appMenu) {
         //super();
@@ -102,60 +101,6 @@ public class PatientMenu extends MenuTemplate {
         }else if(e.getSource()==seeSymptomsCalendar) {
             symptomsCalendarPanel.updateData(appMenu.patient.getSymptomsList());
             appMenu.changeToPanel(symptomsCalendarPanel);
-            int option = JOptionPane.showConfirmDialog(
-                    this,
-                    "Start a new BITalino recording?",
-                    "New Recording",
-                    JOptionPane.YES_NO_OPTION
-            );
-            if (option == JOptionPane.YES_OPTION) {
-                // Lanzamos la grabación en un hilo para no bloquear la UI
-                new Thread(() -> {
-                    try {
-                        recorderService.startRecording();
-                       // TODOañadir panel de progreso o similar
-                        // TODO cuando el usuario cierre el diálogo, paramos
-                        recorderService.stopRecording();
-                        if (recorderService.isRecordingInterrupted()) {
-                            // TODO le dice al usuario q la señal del bitalino se ha interrumpido y que se mandara lo que si se haya grabado
-                        }
-                        // construimos la Signal asociada al paciente
-                        int patientId = appMenu.patient.getId(); // o como lo tengas
-                        Signal signal = recorderService.buildSignalForPatient();
-
-                        String json = signal.buildSignalMetadataJson(signal,patientId);
-                        System.out.println("JSON metadata:\n" + json);
-                        //TODO pedir al cliente el ip
-                        int port1 = 9000;
-                        int port2 = 9009;
-                        String ip = "localhost";
-                        SendZipToServer zipClient = new SendZipToServer(ip, port1);
-                        boolean zipOk = zipClient.sendZipToServer(signal.getRawSignal());
-                        // TODO manejar la respuesta del servidor con boolean zipOk y si false remandar el zip
-                        SendSignalMetadataToServer metaClient = new SendSignalMetadataToServer(ip, port2);
-                        boolean metaOk = metaClient.sendMetadataJson(json);
-
-                        /*SwingUtilities.invokeLater(() -> {
-                            if (zipOk && metaOk) {
-                                JOptionPane.showMessageDialog(this,
-                                        "Recording saved and sent to your doctor.");
-                            } else {
-                                JOptionPane.showMessageDialog(this,
-                                        "Recording finished, but there was an error sending data.",
-                                        "Warning", JOptionPane.WARNING_MESSAGE);
-                            }
-                        });*/
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        SwingUtilities.invokeLater(() ->
-                                JOptionPane.showMessageDialog(this,
-                                        "Error recording BITalino",
-                                        "Error",
-                                        JOptionPane.ERROR_MESSAGE)
-                        );
-                    }
-                }).start();
-            }
         }else if(e.getSource()==logOutButton) {
             appMenu.doctor = null;
             appMenu.patient = null;
