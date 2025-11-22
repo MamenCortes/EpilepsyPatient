@@ -181,6 +181,7 @@ public class RecordSignal extends JPanel implements ActionListener {
             System.out.println(macAdd);
 
             //TODO: Call functions to Connect to bitalino and manage errors
+            SignalRecorderService recorderService = new SignalRecorderService(macAdd);
             recorderService.startRecording();
             if (recorderService.isRecording()) {
                 cardLayout.show(cardPanel, "Panel2");
