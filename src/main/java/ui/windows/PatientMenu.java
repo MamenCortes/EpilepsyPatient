@@ -75,18 +75,18 @@ public class PatientMenu extends MenuTemplate {
     public void actionPerformed(ActionEvent e) {
         if(e.getSource()== seeDoctorInfo) {
             //appMenu.changeToAddPatient();
-            Doctor doctor = null;
             if(appMenu.doctor == null) {
+                Doctor doctor = null;
                 try {
-                    doctor = appMenu.client.getDoctorFromPatient(appMenu.patient.getDoctor_id(), appMenu.patient.getId(), appMenu.user.getId());appMenu.changeToPanel(doctorInfoPanel);
-                    System.out.println("Doctor = "+doctor);
-                    appMenu.doctor = doctor;
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
+                    appMenu.doctor = appMenu.client.getDoctorFromPatient(appMenu.patient.getDoctor_id(), appMenu.patient.getId(), appMenu.user.getId());
+                    System.out.println("Doctor received from server ="+ appMenu.doctor);
+                } catch (IOException | InterruptedException ex) {
+                    JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
             }
-            System.out.println("Doctor ="+ doctor);
-            doctorInfoPanel.updateDoctorForm(doctor);
+            //System.out.println("Doctor ="+ appMenu.doctor);
+            doctorInfoPanel.updateDoctorForm(appMenu.doctor);
             appMenu.changeToPanel(doctorInfoPanel);
         }else if(e.getSource()== seePatientDetails) {
             //appMenu.changeToSearchPatient();

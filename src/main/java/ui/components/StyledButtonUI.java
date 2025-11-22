@@ -9,7 +9,10 @@ import javax.swing.AbstractButton;
 import javax.swing.JComponent;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.basic.BasicButtonUI;
-
+/**
+ * Custom UI delegate for buttons providing rounded background painting
+ * and custom padding.
+ */
 public class StyledButtonUI extends BasicButtonUI {
 
     @Override

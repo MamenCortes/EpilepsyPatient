@@ -165,10 +165,30 @@ public class Application extends JFrame {
         dialog.setVisible(true);
     }
 
-    private void stopEverything(){
+    public void stopEverything(){
         if(client != null && client.isConnected()){
-            client.stopClient();
+            client.stopClient(true);
         }
         dispose();
+        System.exit(0);
     }
+
+    public void onServerDisconnected() {
+        SwingUtilities.invokeLater(() -> {
+
+            JOptionPane.showMessageDialog(
+                    null,
+                    "The conexion with the server was interrupted.",
+                    "Conexion error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+
+            // Espera a que el message dialog finalice y luego lanza el siguiente diálogo
+            SwingUtilities.invokeLater(() -> {
+                this.showDialogIntroduceIP(this);
+                System.out.println("Requested new IP address");
+            });
+        });
+    }
+
 }

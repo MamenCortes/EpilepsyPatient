@@ -11,6 +11,7 @@ import java.util.Objects;
 import javax.swing.*;
 
 import net.miginfocom.swing.MigLayout;
+import network.LogInError;
 import pojos.Patient;
 import pojos.User;
 import ui.components.*;
@@ -80,7 +81,7 @@ public class UserLogIn extends JPanel implements ActionListener{
                 int width = getWidth();
                 int height = getHeight();
 
-                // 🔹 Degradado de izquierda a derecha (puedes cambiarlo a vertical si quieres)
+                // Degradado de izquierda a derecha (puedes cambiarlo a vertical si quieres)
                 GradientPaint gradient = new GradientPaint(0, 0, Application.light_purple, 0, getHeight(), Application.light_turquoise);
 
                 g2d.setPaint(gradient);
@@ -104,7 +105,7 @@ public class UserLogIn extends JPanel implements ActionListener{
 
         panelLogIn.setBackground(Color.white);
         panelLogIn.setLayout(new MigLayout("wrap", "push[center]push", "push[]25[]10[]10[][]15[]push"));
-        JLabel label = new JLabel("Sign In");
+        JLabel label = new JLabel("Log In");
         label.setFont(new Font("sansserif", 1, 30));
         label.setForeground(Application.dark_purple);
         panelLogIn.add(label);
@@ -220,22 +221,12 @@ public class UserLogIn extends JPanel implements ActionListener{
         if(!email.isBlank() && !password.isBlank()) {
 
             try {
-                Map<String, Object> response = appMain.client.login(email, password);
-                Boolean success =  (Boolean) response.get("login");
-                System.out.println(success);
-                if(success) {
-                    appMain.patient = (Patient) response.get("patient");
-                    appMain.user = (User) response.get("user");
-                    return true;
-                }else{
-                    showErrorMessage(response.get("message").toString());
-                    //showErrorMessage("Incorrect email or password");
-                }
-            } catch (IOException e) {
+                appMain.client.login(email, password);
+                return true;
+            } catch (IOException | InterruptedException | LogInError e) {
                 showErrorMessage(e.getMessage());
+                return false;
             }
-            return false;
-
         }else {
             showErrorMessage("Complete all fields");
             return false;
