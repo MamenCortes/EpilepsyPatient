@@ -6,9 +6,13 @@ import pojos.Patient;
 import pojos.User;
 import ui.windows.Application;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import java.io.*;
 import java.net.Socket;
 import java.nio.Buffer;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -206,8 +210,6 @@ public class Client {
             throw new LogInError(response.get("message").getAsString());
         }
     }
-
-
 
     public Doctor getDoctorFromPatient(int doctor_id, int patient_id, int user_id) throws IOException, InterruptedException {
         Map<String, Object> data = new HashMap<>();
