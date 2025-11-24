@@ -2,8 +2,10 @@ package pojos;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 
 import java.io.File;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -12,6 +14,7 @@ public class Signal {
     private int samplingFrequency;
     private String timeStamp;
     private File rawSignal;
+    private int id;
 
     public String getDate() {
         return date;
@@ -29,6 +32,16 @@ public class Signal {
         this.timeStamp = timeStamp;
         this.comments = "";
         this.date = date;
+        this.id = -1;
+    }
+
+    public Signal(int id, String date, int samplingFrequency, File rawSignal, String timeStamp) {
+        this.samplingFrequency = samplingFrequency;
+        this.rawSignal = rawSignal;
+        this.timeStamp = timeStamp;
+        this.comments = "";
+        this.date = date;
+        this.id = id;
     }
 
     public Signal() {
@@ -38,6 +51,7 @@ public class Signal {
         this.timeStamp = "";
         this.comments = "";
         this.date = DateTimeFormatter.ofPattern("dd/MM/yyyy").format(LocalDateTime.now());
+        this.id = -1;
     }
 
     @Override
@@ -77,6 +91,14 @@ public class Signal {
         this.rawSignal = rawSignal;
    }
 
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
     public static class SignalMetadataDTO {
         public Integer patientId;
         public String comments;
@@ -94,5 +116,38 @@ public class Signal {
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         return gson.toJson(dto);
+    }
+
+    /**
+     * Converts this {@code Signal} into a {@link JsonObject}.
+     *
+     * @return  a JSON representation of this signal
+     *
+     * @see JsonObject
+     */
+    public JsonObject toJson() {
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("id", id);
+        jsonObject.addProperty("date", date.toString());
+        jsonObject.addProperty("comments", comments);
+        jsonObject.addProperty("sampleFrequency", samplingFrequency);
+        return jsonObject;
+    }
+
+    /**
+     * Creates a new {@code Signal} instance from a {@link JsonObject}
+     *
+     * @param json the JSON object containing this {@code Signal} data
+     * @return  a {@code Signal} instance from the {@link JsonObject}
+     *
+     * @see JsonObject
+     */
+    public static Signal fromJson(JsonObject json) {
+        Signal signal = new Signal();
+        signal.setId(json.get("id").getAsInt());
+        signal.setComments(json.get("comments").getAsString());
+        signal.setSamplingFrequency(json.get("sampleFrequency").getAsInt());
+        signal.setDate(String.valueOf(LocalDate.parse(json.get("date").getAsString())));
+        return signal;
     }
 }

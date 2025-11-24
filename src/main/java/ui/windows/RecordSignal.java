@@ -52,7 +52,12 @@ public class RecordSignal extends JPanel implements ActionListener {
     Application appMain;
 
     public static void main(String[] args) {
-        RecordSignal symptomPanel = new RecordSignal(new Application());
+        RecordSignal symptomPanel = null;
+        try {
+            symptomPanel = new RecordSignal(new Application());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         JFrame frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         //frame.setSize(800, 600);
