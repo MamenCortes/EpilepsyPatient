@@ -1,11 +1,12 @@
 package pojos;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
+import ui.temp.SymptomCalendar;
 
+import java.lang.reflect.Array;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The {@code Patient} class represents a patient entity.
@@ -193,21 +194,46 @@ public class Patient {
     /**
      * Creates a new {@code Patient} instance from a {@link JsonObject}.
      *
-     * @param jason  the JSON object containing this {@code Patient} data
+     * @param json  the JSON object containing this {@code Patient} data
      * @return  a {@code Patient} instance from the {@link JsonObject}
      *
      * @see JsonObject
      */
-    public static Patient fromJason(JsonObject jason) {
+    public static Patient fromJason(JsonObject json) {
         Patient patient = new Patient();
-        patient.setId(jason.get("id").getAsInt());
-        patient.setName(jason.get("name").getAsString());
-        patient.setSurname(jason.get("surname").getAsString());
-        patient.setEmail(jason.get("email").getAsString());
-        patient.setPhone(jason.get("contact").getAsInt());
-        patient.setDateOfBirth(LocalDate.parse(jason.get("dateOfBirth").getAsString()));
-        patient.setGender(jason.get("gender").getAsString());
-        patient.setDoctor_id(jason.get("doctorId").getAsInt());
+        patient.setId(json.get("id").getAsInt());
+        patient.setName(json.get("name").getAsString());
+        patient.setSurname(json.get("surname").getAsString());
+        patient.setEmail(json.get("email").getAsString());
+        patient.setPhone(json.get("contact").getAsInt());
+        patient.setDateOfBirth(LocalDate.parse(json.get("dateOfBirth").getAsString()));
+        patient.setGender(json.get("gender").getAsString());
+        patient.setDoctor_id(json.get("doctorId").getAsInt());
+
+
+        // ----- SIGNALS -----
+        if (json.has("signals")) {
+            JsonArray signalsJson = json.getAsJsonArray("signals");
+            ArrayList<Signal> signals = new ArrayList<>();
+
+            for (JsonElement elem : signalsJson) {
+                JsonObject sJson = elem.getAsJsonObject();
+                signals.add(Signal.fromJson(sJson));
+            }
+            patient.setSignalRecordingsList(signals);
+        }
+
+        // ----- SYMPTOMS / REPORTS -----
+        if (json.has("reports")) {
+            JsonArray symptomsJson = json.getAsJsonArray("reports");
+            ArrayList<Report> reports = new ArrayList<>();
+
+            for (JsonElement elem : symptomsJson) {
+                JsonObject rJson = elem.getAsJsonObject();
+                reports.add(Report.fromJson(rJson));
+            }
+            patient.setSymptomsList(reports);
+        }
         return patient;
     }
 

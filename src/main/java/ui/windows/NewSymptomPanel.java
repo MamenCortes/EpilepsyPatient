@@ -1,6 +1,7 @@
 package ui.windows;
 
 import net.miginfocom.swing.MigLayout;
+import network.ServerError;
 import pojos.Report;
 import pojos.SymptomType;
 import ui.components.MyButton;
@@ -11,6 +12,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -148,10 +150,15 @@ public class NewSymptomPanel extends JPanel implements ActionListener {
                 return;
             }
 
-            appMain.patient.addSymptom(report);
-            System.out.println(report);
-            resetPanel();
-            appMain.changeToMainMenu();
+            try{
+                appMain.client.sendReport(report, appMain.patient.getId(), appMain.user.getId());
+                appMain.patient.addSymptom(report);
+                System.out.println(report);
+                resetPanel();
+                appMain.changeToMainMenu();
+            }catch(ServerError | IOException | InterruptedException ex){
+                showErrorMessage("Could not save the symptoms. Please try again");
+            }
 
         }else if(e.getSource() == cancel) {
             appMain.changeToMainMenu();
