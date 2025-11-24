@@ -11,7 +11,25 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-
+/**
+ * Panel that displays read-only personal information of the currently logged-in patient.
+ * <p>
+ * This view is accessed from the patient menu to show demographic and contact data.
+ * The panel is not editable and acts purely as an information display.
+ * </p>
+ *
+ * <h3>Lifecycle</h3>
+ * <ul>
+ *     <li>The panel is created once inside {@link PatientMenu} and reused for the entire session.</li>
+ *     <li>{@link #initPatientInfo()} initializes Swing components and delegates layout to {@link #initPatientForm()}.</li>
+ *     <li>Whenever the patient accesses this view, {@link #updatePatientForm(Patient)} is called
+ *         to populate the fields with fresh data from the main application state.</li>
+ *     <li>When the user exits, the panel simply switches back to the main menu without deleting data.</li>
+ *     <li>No resetting is required, since all fields are overwritten each time the panel is shown.</li>
+ * </ul>
+ *
+ * @author MamenCortes
+ */
 public class PatientInfo extends JPanel implements ActionListener {
     private Application appMain;
     private JLabel nameHeading;
@@ -24,7 +42,6 @@ public class PatientInfo extends JPanel implements ActionListener {
     private MyTextField phoneNumber;
     private JLabel genderHeading;
     private MyTextField gender;
-    private MyComboBox<String> nextStep;
     private JLabel birthDateHeading;
     private MyTextField birthDate;
 
@@ -42,50 +59,59 @@ public class PatientInfo extends JPanel implements ActionListener {
     private final Color contentColor = Application.dark_turquoise;
     private Color textFieldBg = new Color(230, 245, 241);
 
-    //private JDateChooser birthDate;
+    /**
+     * Creates the patient information panel and initializes the UI components.
+     *
+     * @param appMain reference to the main application, used for navigation
+     *                and access to the current {@link Patient} instance.
+     */
     public PatientInfo(Application appMain) {
         this.appMain = appMain;
         initPatientInfo();
 
     }
 
+    /**
+     * Initializes the underlying model and disabled text fields, then delegates the layout
+     * construction to {@link #initPatientForm()}. This method is executed only once.
+     */
     public void initPatientInfo() {
         this.titleText = "Patient information";
 
         //Initialize values
         name = new MyTextField();
-        //name.setText("Jane");
-        //name.setText(patient.getName());
         name.setEnabled(false); //Doesnt allow editing
+
         surname = new MyTextField();
-        //surname.setText("Doe");
-        //surname.setText(patient.getSurname());
         surname.setEnabled(false);
+
         email = new MyTextField();
-        //email.setText("jane.doe@gmail.com");
-        //email.setText(patient.getEmail());
         email.setEnabled(false);
+
         phoneNumber = new MyTextField();
-        //phoneNumber.setText("123456789");
-        //phoneNumber.setText(Integer.toString(patient.getPhone()));
         phoneNumber.setEnabled(false);
+
         gender = new MyTextField();
-        //sex.setText("Non Binary");
-        //gender.setText(patient.getGender());
         gender.setEnabled(false);
+
         birthDate = new MyTextField();
-        //birthDate.setText("1999-11-11");
-        //birthDate.setText(patient.getDateOfBirth().toString());
         birthDate.setEnabled(false);
+
         formContainer = new JPanel();
         initPatientForm();
     }
-
+    /**
+     * Builds and lays out the structure of the panel, including:
+     * <ul>
+     *     <li>Title header</li>
+     *     <li>A form with read-only text fields for all patient attributes</li>
+     *     <li>Navigation button to return to the main menu</li>
+     * </ul>
+     * This method sets up the static visual layout; actual patient data is injected later through {@link #updatePatientForm(Patient)}.
+     */
     private void initPatientForm() {
-        //this.setLayout(new MigLayout("fill, inset 15, gap 0, wrap 4, debug", "[][][][]", "[][][][][][][][][][]"));
         this.setLayout(new MigLayout("fill", "[][][][]", "[][][][][][][][][][]"));
         this.setBackground(Color.white);
-        //this.setBackground(Application.lighter_turquoise);
         formContainer.setBackground(Color.white);
         formContainer.setLayout(new MigLayout("fill, inset 10, gap 5, wrap 2", "[grow 50][grow 50]", "[][][][][][][]push"));
 
@@ -97,12 +123,7 @@ public class PatientInfo extends JPanel implements ActionListener {
         title.setAlignmentY(LEFT_ALIGNMENT);
         title.setIcon(new ImageIcon(getClass().getResource("/icons/patient-info64-2.png")));
         add(title, "cell 0 0 4 1, alignx left");
-
-        //add(formContainer,  "cell 0 1 4 8, grow, gap 10");
-        //place in column 0, row 1, expand to 4 columns and 8 rows. Gap 10px left and right
         add(formContainer,  "cell 0 1 4 8, grow, gap 10 10");
-
-        //add(title1, "cell 0 0, grow");
 
         //ROW 1
         //Name and surname
@@ -110,7 +131,6 @@ public class PatientInfo extends JPanel implements ActionListener {
         nameHeading.setFont(contentFont);
         nameHeading.setForeground(contentColor);
         formContainer.add(nameHeading, "cell 0 0");
-        //add(nameText, "skip 1, grow");
 
         surnameHeading = new JLabel("Surname*");
         surnameHeading.setFont(contentFont);
@@ -154,14 +174,21 @@ public class PatientInfo extends JPanel implements ActionListener {
         //Add buttons
         goBackButton = new MyButton("GO BACK", Application.turquoise, Color.white);
         goBackButton.addActionListener(this);
-        //add(goBackButton,"cell 1 7, left, gapx 10, gapy 5");
         add(goBackButton, "cell 0 9, span, center");
 
         applyChanges = new MyButton("APPLY");
         applyChanges.addActionListener(this);
 
     }
-
+    /**
+     * Updates the form fields with the values of the given patient.
+     * <p>
+     * Called every time the patient opens the "See My Details" section, ensuring
+     * that the view always reflects the most up-to-date information received from the server.
+     * </p>
+     *
+     * @param patient the patient whose information is displayed
+     */
     public void updatePatientForm(Patient patient) {
         name.setText(patient.getName());
         surname.setText(patient.getSurname());
@@ -170,7 +197,10 @@ public class PatientInfo extends JPanel implements ActionListener {
         phoneNumber.setText(Integer.toString(patient.getPhone()));
         gender.setText(patient.getGender());
     }
-
+    /**
+     * Clears all fields. While generally unused (since fields are overwritten
+     * before each display), this method is useful if the panel is repurposed or recycled.
+     */
     private void resetForm() {
         name.setText("");
         surname.setText("");
@@ -180,9 +210,19 @@ public class PatientInfo extends JPanel implements ActionListener {
         gender.setText("");
     }
 
+    /**
+     * Handles UI actions:
+     * <ul>
+     *     <li><b>Go Back</b> — returns to the main menu using
+     *         {@link Application#changeToMainMenu()}.</li>
+     * </ul>
+     *
+     * @param e action event triggered by user interaction
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource() == goBackButton) {
+            resetForm();
             appMain.changeToMainMenu();
         }
     }

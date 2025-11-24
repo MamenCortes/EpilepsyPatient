@@ -12,6 +12,8 @@ import javax.swing.plaf.basic.BasicButtonUI;
 /**
  * Custom UI delegate for buttons providing rounded background painting
  * and custom padding.
+ *
+ * @author MamenCortes
  */
 public class StyledButtonUI extends BasicButtonUI {
 

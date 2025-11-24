@@ -39,14 +39,18 @@ public class Client {
     //Y que otro thread los reciba (con take() o poll())
     //si no hay mensajes, take() se bloquea automáticamente, sin consumir CPU
     private BlockingQueue<JsonObject> responseQueue = new LinkedBlockingQueue<>();
-    private final KeyPair keyPair;
+    private KeyPair keyPair;
     private PublicKey serverPublicKey;
     private SecretKey AESkey;
 
-    public Client(Application appMain) throws Exception {
+    public Client(Application appMain){
         this.appMain = appMain;
         //generates the public and private key pair
-        this.keyPair = RSAKeyManager.generateKeyPair();
+        try {
+            this.keyPair = RSAKeyManager.generateKeyPair();
+        }catch (Exception ex){
+            System.out.println("Error generating key pair: "+ex.getMessage());
+        }
     }
 
     public Boolean connect(String ip, int port) {

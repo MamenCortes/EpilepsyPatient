@@ -16,7 +16,27 @@ import ui.components.MyTextField;
 import ui.components.RecordingCell;
 
 import javax.swing.*;
-
+/**
+ * Panel that displays the full list of physiological signal recordings belonging
+ * to the currently logged-in patient.
+ * <p>
+ * The user may search recordings by date, reset the search results, or navigate
+ * back to the patient menu. Each item in the list represents a {@link Signal}.
+ * The graph visualization of the signals is not supported. The patient can only see the Signal metadata.
+ * </p>
+ *
+ * <h3>Lifecycle</h3>
+ * <ul>
+ *     <li>Created once in {@link PatientMenu} and reused each time the patient enters the section.</li>
+ *     <li>{@link #initMainPanel()} constructs the static UI layout (title, search bar, list container).</li>
+ *     <li>{@link #updateSignalRecordingsList(List)} is called every time the menu navigates to this view,
+ *         ensuring fresh data is displayed.</li>
+ *     <li>When the panel is exited (via “Back to Menu”), {@link #resetPanel()} clears search fields
+ *         and internal lists to prepare for the next visit.</li>
+ * </ul>
+ *
+ * @author MamenCortes
+ */
 public class RecordingsHistory extends JPanel implements ActionListener, MouseListener {
 
     private static final long serialVersionUID = -2213334704230710767L;
@@ -33,18 +53,26 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
     protected MyButton resetListButton;
     protected JLabel errorMessage;
     protected MyButton goBackButton;
-    //protected Application appMain;
     protected JList<Signal> reportsList;
     protected DefaultListModel<Signal> recordingsDefListModel;
     private List<Signal> allRecordings;
-
+    /**
+     * Creates the panel and initializes the user interface elements.
+     *
+     * @param appMain reference to the main application controller. Used for navigation
+     *                and to access patient data and server responses.
+     */
     public RecordingsHistory(Application appMain) {
         this.appMain = appMain;
         initMainPanel();
-        //showReports(ModelManager.generateRandomSignalRecordings());
-        //showPatients(null);
     }
-
+    /**
+     * Initializes and lays out the search bar, title header, results list and navigation button.
+     * <p>
+     * This method is called only once in the constructor. Dynamic content such as the list
+     * of recordings is populated later through {@link #updateSignalRecordingsList(List)}.
+     * </p>
+     */
     private void initMainPanel() {
         this.setLayout(new MigLayout("fill, inset 20, gap 0, wrap 3", "[grow 5]5[grow 5]5[grow 40][grow 40]", "[][][][][][][][][][]"));
         this.setBackground(Color.white);
@@ -76,11 +104,6 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
         searchButton.addActionListener(this);
         add(searchButton, "cell 1 3, right, gapy 5, grow");
 
-        /*openFormButton = new MyButton("OPEN FILE");
-        openFormButton.addActionListener(this);
-        add(openFormButton, "cell 0 4, center, gapy 5, span 2, grow");
-        openFormButton.setVisible(false);*/
-
         goBackButton = new MyButton("BACK TO MENU", Application.turquoise, Color.white);
         goBackButton.addActionListener(this);
         add(goBackButton, "cell 0 7, center, gapy 5, span 2, grow");
@@ -96,7 +119,6 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
         JScrollPane scrollPane1 = new JScrollPane();
         scrollPane1.setOpaque(false);
         scrollPane1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        //scrollPane1.setViewportView(gridPanel);
 
         recordingsDefListModel = new DefaultListModel<Signal>();
         reportsList = new JList<Signal>(recordingsDefListModel);
@@ -104,15 +126,19 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
         reportsList.setCellRenderer(new RecordingCell());
         reportsList.addMouseListener(this);
         scrollPane1.setViewportView(reportsList);
-
         scrollPane1.setPreferredSize(this.getPreferredSize());
 
         add(scrollPane1, "cell 2 1 2 6, grow, gap 10");
-
-        //showPatients(appMain.patientMan.searchPatientsBySurname("Blanco"));
-        //showDoctors(createRandomDoctors());
     }
-
+    /**
+     * Updates the list model with a new set of recordings retrieved from the server.
+     * <p>
+     * It also caches the full list in {@code allRecordings} so the search functionality
+     * can filter results without making additional network requests.
+     * </p>
+     *
+     * @param list list of signals to display; may be empty or null
+     */
     public void updateSignalRecordingsList(List<Signal> list){
         if(list == null || list.isEmpty()) {
             showErrorMessage("No signal found!");
@@ -128,25 +154,53 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
 
         }
     }
-
+    /**
+     * Shows an error message below the search panel, used when filtering or loading fails.
+     *
+     * @param message the text to display
+     */
     private void showErrorMessage(String message) {
         errorMessage.setText(message);
         errorMessage.setVisible(true);
     }
 
+    /**
+     * Hides the error message label.
+     */
     private void hideErrorMessage() {
         errorMessage.setVisible(false);
     }
-
+    /**
+     * Resets the panel to its default state:
+     * <ul>
+     *     <li>Clears search text</li>
+     *     <li>Clears the stored list of recordings</li>
+     *     <li>Clears the displayed list model</li>
+     *     <li>Hides error messages</li>
+     * </ul>
+     * <p>
+     * This method is invoked whenever the user leaves the panel
+     * (e.g., by clicking “Back to Menu”).
+     * </p>
+     */
     private void resetPanel(){
-        //TODO: reset panel when going back to menu
         hideErrorMessage();
         searchByTextField.setText("");
         allRecordings = null;
         recordingsDefListModel.clear();
     }
 
-
+    /**
+     * Handles the button interactions:
+     * <ul>
+     *     <li><b>Back to Menu</b> – Resets the panel and returns to the main menu.</li>
+     *     <li><b>Search</b> – Filters recordings by date (substring match).</li>
+     *     <li><b>Reset</b> – Restores the full original recordings list.</li>
+     * </ul>
+     *
+     * @param e the event triggered by button clicks
+     */
+    @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource() == goBackButton) {
             resetPanel();
@@ -162,41 +216,13 @@ public class RecordingsHistory extends JPanel implements ActionListener, MouseLi
             updateSignalRecordingsList(filteredRecordings);
             if(filteredRecordings.isEmpty()) {
                 showErrorMessage("No Signals found");
-                //openRecordingButton.setVisible(false);
             }
         }else if(e.getSource() == resetListButton) {
             updateSignalRecordingsList(allRecordings);
             if (allRecordings.isEmpty()) {
                 showErrorMessage("No patient found");
-                //openFormButton.setVisible(false);
-            } else {
-                //openFormButton.setVisible(true);
             }
         }
-        /*if(e.getSource() == searchButton) {
-            errorMessage.setVisible(false);
-            String input = searchByTextField.getText();
-            System.out.println(input);
-            List<Patient> patients = appMain.conMan.getPatientMan().searchPatientsBySurname(input);
-            updatePatientDefModel(patients);
-            if(patients.isEmpty()) {
-                showErrorMessage("No patient found");
-            }else {
-                openFormButton.setVisible(true);
-            }
-
-        }else if(e.getSource() == openFormButton){
-            Patient patient = patientList.getSelectedValue();
-            if(patient == null) {
-                showErrorMessage("No patient Selected");
-            }else {
-                resetPanel();
-                appMain.changeToAdmitPatient(patient);
-            }
-        }else if(e.getSource() == cancelButton){
-            resetPanel();
-            appMain.changeToRecepcionistMenu();
-        }*/
 
     }
 
