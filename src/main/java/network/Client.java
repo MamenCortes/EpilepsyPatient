@@ -3,6 +3,7 @@ package network;
 import com.google.gson.*;
 import pojos.Doctor;
 import pojos.Patient;
+import pojos.Report;
 import pojos.User;
 import ui.windows.Application;
 
@@ -260,6 +261,31 @@ public class Client {
             System.out.println("Connection closed");
         } catch (IOException ex) {
             System.out.println("Error closing socket"+ex.getMessage());
+        }
+    }
+
+    public void sendReport(Report report, int patient_id, int user_id) throws IOException, InterruptedException, ServerError {
+        Map<String, Object> data = new HashMap<>();
+        data.put("user_id", user_id);
+        data.put("patient_id", patient_id);
+        data.put("report", report.toJson());
+
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "SAVE_REPORT");
+        message.put("data", data);
+
+        String jsonMessage = gson.toJson(message);
+        out.println(jsonMessage); // send JSON message
+
+        JsonObject response;
+        do {
+            response = responseQueue.take();
+        } while (!response.get("type").getAsString().equals("SAVE_REPORT_RESPONSE"));
+        Doctor doctor = null;
+
+        String status = response.get("status").getAsString();
+        if (status.equals("ERROR")) {
+            throw new ServerError(response.get("message").getAsString());
         }
     }
 
