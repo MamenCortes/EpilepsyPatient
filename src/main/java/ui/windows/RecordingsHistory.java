@@ -34,6 +34,8 @@ import javax.swing.*;
  *     <li>When the panel is exited (via “Back to Menu”), {@link #resetPanel()} clears search fields
  *         and internal lists to prepare for the next visit.</li>
  * </ul>
+ *
+ * @author MamenCortes
  */
 public class RecordingsHistory extends JPanel implements ActionListener, MouseListener {
 

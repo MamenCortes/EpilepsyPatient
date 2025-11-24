@@ -37,6 +37,8 @@ import java.util.ArrayList;
  *     <li>When the user saves, a {@link Report} object is created and sent to the server,
  *         and the panel returns to the main menu.</li>
  * </ul>
+ *
+ * @author MamenCortes
  */
 public class NewSymptomPanel extends JPanel implements ActionListener {
     //Format variables: Color and Font

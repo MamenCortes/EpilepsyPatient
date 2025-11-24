@@ -27,6 +27,8 @@ import java.awt.event.ActionListener;
  *     <li>When the user exits, the panel simply switches back to the main menu without deleting data.</li>
  *     <li>No resetting is required, since all fields are overwritten each time the panel is shown.</li>
  * </ul>
+ *
+ * @author MamenCortes
  */
 public class PatientInfo extends JPanel implements ActionListener {
     private Application appMain;

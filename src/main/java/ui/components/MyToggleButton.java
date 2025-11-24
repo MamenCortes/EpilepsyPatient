@@ -9,6 +9,8 @@ import java.awt.image.BufferedImage;
 /**
  * A custom toggle button with predefined styles, colors and optional icon support.
  * It applies custom fonts, background color, foreground color and a styled UI delegate.
+ *
+ * @author MamenCortes
  */
 public class MyToggleButton extends JToggleButton {
 

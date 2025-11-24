@@ -50,6 +50,10 @@ import java.util.Base64;
  *          </ul>
  *     </li>
  * </ul>
+ *
+ * @author MamenCortes
+ * @author MartaSanchezdelHoyo
+ * @author paulablancog
  */
 public class RecordSignal extends JPanel implements ActionListener {
     //Format variables: Color and Font

@@ -32,6 +32,8 @@ import java.io.IOException;
  *     <li>After navigating to a child panel, the application replaces the current content pane.</li>
  *     <li>On logout, the application clears global data (patient, doctor, user) and returns to login.</li>
  * </ul>
+ *
+ * @author MamenCortes
  */
 public class PatientMenu extends MenuTemplate {
     private static final long serialVersionUID = 6050014345831062858L;

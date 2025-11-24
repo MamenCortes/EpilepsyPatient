@@ -46,6 +46,8 @@ import java.util.List;
  *     <li>When the user selects a new month from the dropdown, {@link #updateTable(int)} recalculates
  *         the grid and repaints symptom markers.</li>
  * </ul>
+ *
+ * @author MamenCortes
  */
 public class SymptomsCalendar extends JPanel implements ActionListener, MouseListener {
 
