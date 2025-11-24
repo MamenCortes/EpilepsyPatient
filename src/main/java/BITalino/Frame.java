@@ -1,4 +1,4 @@
-package ceu.biolab.BITalino;
+package BITalino;
 
 /// A frame returned by BITalino.read()
 public class Frame {

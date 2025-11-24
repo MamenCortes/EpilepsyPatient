@@ -2,8 +2,7 @@ package ui.windows;
 
 import com.google.gson.JsonObject;
 import net.miginfocom.swing.MigLayout;
-import pojos.Signal;
-import ui.SignalRecorderService;
+import BITalino.SignalRecorderService;
 import ui.components.MyButton;
 import ui.components.MyTextField;
 
@@ -12,7 +11,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -260,8 +258,8 @@ public class RecordSignal extends JPanel implements ActionListener {
                     byte[] zipBytes = Files.readAllBytes(lastZipFile.toPath());
                     String base64Zip = Base64.getEncoder().encodeToString(zipBytes);
                     request.addProperty("data", base64Zip);
-                    String ip = iptxtField.getText();
-                    appMain.client.sendJsonToServer(String.valueOf(request),ip,9000);
+                    System.out.println(request);
+                    appMain.client.sendJsonToServer(String.valueOf(request));
                     Thread.sleep(3000);
                     return true;
                 } catch (Exception e) {

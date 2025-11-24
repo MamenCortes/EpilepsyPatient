@@ -1,4 +1,4 @@
-package ceu.biolab.BITalino;
+package BITalino;
 
 public class BITalinoException extends Exception {
 	

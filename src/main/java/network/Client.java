@@ -54,23 +54,6 @@ public class Client {
     protected Socket createSocket(String ip, int port) throws IOException {
         return new Socket(ip, port);
     }
-
-    public boolean sendMetadataJson(String json, String ip, int port) {
-        try (Socket socket = new Socket(ip, port);
-             PrintWriter writer = new PrintWriter(
-                     new OutputStreamWriter(socket.getOutputStream()), true)) {
-
-            writer.println(json);
-            writer.flush();
-
-            System.out.println("✅ Metadata JSON sent to server.");
-            return true;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
     /// Start a thread that listens for messages from the server
     /// If the server sends STOP_CLIENT, the connection is closed and also the app???
     public void startListener() {
@@ -235,15 +218,10 @@ public class Client {
         return doctor;
     }
 
-    public void sendJsonToServer(String json, String ip, int port) throws Exception {
-        Socket socket = new Socket(ip, port);
+    public void sendJsonToServer(String json) throws Exception {
+        out.println(json);
+        out.flush();
 
-        PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-        pw.println(json);
-
-        pw.flush();
-        pw.close();
-        socket.close();
     }
     private static void releaseResources(PrintWriter printWriter, BufferedReader in,Socket socket) {
         printWriter.close();
