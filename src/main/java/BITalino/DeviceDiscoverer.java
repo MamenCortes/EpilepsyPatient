@@ -1,4 +1,4 @@
-package ceu.biolab.BITalino;
+package BITalino;
 
 import javax.bluetooth.*;
 import java.util.Vector;

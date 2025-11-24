@@ -1,8 +1,5 @@
-package ui;
+package BITalino;
 
-import ceu.biolab.BITalino.BITalino;
-import ceu.biolab.BITalino.BITalinoException;
-import ceu.biolab.BITalino.Frame;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.junit.Test;
@@ -64,6 +61,7 @@ public class SignalRecorderService {
             System.out.println("🎯 Hilos en ejecución (Read / Analyze / Save)");
 
         } catch (Throwable e) {
+            //excepcion lanzar mensaje a la UI
             e.printStackTrace();
         }
     }
@@ -84,7 +82,7 @@ public class SignalRecorderService {
             saveThread.join();
         } catch (InterruptedException e) { e.printStackTrace(); }
 
-        // Ahora sí, ya se escribió todo el CSV
+
         zipFile = compressToZip(csvTempFile);
         System.out.println("📦 ZIP creado en: " + zipFile.getAbsolutePath());
     }
@@ -252,16 +250,14 @@ public class SignalRecorderService {
         return Base64.getEncoder().encodeToString(bytes);
     }
 
-    public String buildUploadSignalJson(File zipFile, int patientId, int samplingRate, int durationSeconds, String[] channels) throws Exception {
-
+    public String buildUploadSignalJson(File zipFile, int patientId, int samplingRate) throws Exception {
+ // todo los q hagan falta para la base de datos separar metadata de la señal y el user id
         UploadSignalRequest req = new UploadSignalRequest();
 
         // --- Metadata ---
         req.metadata = new UploadSignalRequest.Metadata();
         req.metadata.patient_id = patientId;
         req.metadata.sampling_rate = samplingRate;
-        req.metadata.duration_seconds = durationSeconds;
-        req.metadata.channels = channels;
         req.metadata.timestamp = LocalDateTime.now().toString();
 
         // --- ZIP contenido ---
