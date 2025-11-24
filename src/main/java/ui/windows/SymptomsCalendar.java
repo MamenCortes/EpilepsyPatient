@@ -21,6 +21,32 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 
+/**
+ * Panel that displays a monthly calendar with all symptoms reported by the patient.
+ * <p>
+ * The calendar shows each day of the selected month, optionally including color-coded
+ * markers representing the types of symptoms reported by the patient on that date.
+ * </p>
+ *
+ * <h3>Features</h3>
+ * <ul>
+ *     <li>Selection of month and year</li>
+ *     <li>Automatic refresh of the table when the month changes</li>
+ *     <li>Color-coded legend that maps each {@link SymptomType} to a unique color</li>
+ *     <li>Tooltip on each calendar cell listing the symptoms of that day</li>
+ *     <li>Navigation back to the main menu</li>
+ * </ul>
+ *
+ * <h3>Lifecycle</h3>
+ * <ul>
+ *     <li>The panel is created once in {@link PatientMenu} and reused during the session.</li>
+ *     <li>Data is initially loaded from {@code appMenu.patient.getSymptomsList()}.</li>
+ *     <li>{@link #updateData(ArrayList)} is called whenever the patient menu opens this view
+ *         to ensure the latest symptom reports are displayed.</li>
+ *     <li>When the user selects a new month from the dropdown, {@link #updateTable(int)} recalculates
+ *         the grid and repaints symptom markers.</li>
+ * </ul>
+ */
 public class SymptomsCalendar extends JPanel implements ActionListener, MouseListener {
 
     private Map<String, Color> colors;
@@ -39,21 +65,28 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
     private MyButton goBackButton;
     private MyComboBox<String> monthComboBox;
     private MyComboBox<String> yearComboBox;
-
+    /**
+     * Constructs the symptoms calendar and loads colors and initial symptom data.
+     *
+     * @param appMenu main application controller, used for navigation and access to patient reports
+     */
     public SymptomsCalendar(Application appMenu) {
         this.appMenu = appMenu;
         colors = generateSymptomColors(SymptomType.class);
-        //TODO: get real patient symptoms
-        //allSymptoms = ModelManager.generateRandomSymptomReports();
         allSymptoms = appMenu.patient.getSymptomsList();
         System.out.println("Num symptoms: " + allSymptoms.size());
         initPanel();
     }
     public static void main(String[] args) {
-        //SwingUtilities.invokeLater(() -> new SymptomCalendar().createAndShowGUI());
         SymptomsCalendar symptomsCalendar = new SymptomsCalendar(null);
     }
-
+    /**
+     * Generates a unique color for each symptom type. Used both for the legend and
+     * for drawing colored markers in calendar cells.
+     *
+     * @param enumClass SymptomType enum
+     * @return map from symptom name to its assigned color
+     */
     public static Map<String, Color> generateSymptomColors(Class<? extends Enum<?>> enumClass) {
         Map<String, Color> colorMap = new HashMap<>();
         Random random = new Random();
@@ -71,7 +104,17 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
 
         return colorMap;
     }
-
+    /**
+     * Initializes the full panel layout including:
+     * <ul>
+     *     <li>Title header</li>
+     *     <li>Month (and potentially year) selectors</li>
+     *     <li>Calendar table</li>
+     *     <li>Scrollable legend showing symptom colors</li>
+     *     <li>Back to menu button</li>
+     * </ul>
+     * The table is initially populated with the current month via {@link #updateTable(int)}.
+     */
     private void initPanel() {
         this.setLayout(new MigLayout("fill, inset 20, gap 0, wrap 3", "[grow 5]5[grow 5]5[grow 90]", "[][][][][][][][][][]"));
         this.setBackground(Color.white);
@@ -84,7 +127,6 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
         title.setIcon(icon);
         add(title, "cell 0 0 3 1, alignx left");
 
-        //
         JLabel monthHeading = new JLabel("Select a month:");
         monthHeading.setFont(titleFont);
         monthHeading.setForeground(Application.darker_purple);
@@ -98,8 +140,6 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
         monthComboBox.setSelectedIndex(LocalDate.now().getMonthValue() - 1);
         monthComboBox.addActionListener(e -> updateTable(monthComboBox.getSelectedIndex() + 1));
         add(monthComboBox, "cell 0 2 2 1, alignx center, grow");
-        //showPatients(appMain.patientMan.searchPatientsBySurname("Blanco"));
-        //showDoctors(createRandomDoctors());
 
         // Initial table
         table = new JTable();
@@ -115,7 +155,6 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
         border.setTitleFont(titleFont);
         border.setTitleColor(Application.turquoise);
         legendPanel.setBorder(border);
-        //legendPanel.setBorder(BorderFactory.createTitledBorder("Legend"));
 
         // Añadimos los síntomas con sus colores
         for (Map.Entry<String, Color> entry : colors.entrySet()) {
@@ -137,7 +176,6 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
         JScrollPane legendScroll = new JScrollPane(legendPanel);
         legendScroll.setBackground(Color.white);
         legendScroll.setBorder(null);
-        //legendScroll.setPreferredSize(new Dimension(200, 120)); // ajusta tamaño según necesites
         legendScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         legendScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
@@ -152,12 +190,32 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
         // Populate table for the initially selected month
         updateTable(monthComboBox.getSelectedIndex() + 1);
     }
-
+    /**
+     * Updates the loaded symptom reports with freshly retrieved data from the server
+     * (or updated local model), and refreshes the calendar using the current month.
+     *
+     * @param reports the list of symptom reports for the current patient
+     */
     public void updateData(ArrayList<Report> reports) {
         allSymptoms = reports;
         updateTable(LocalDate.now().getMonthValue());
     }
 
+    /**
+     * Reconstructs the calendar grid for the selected month.
+     * <p>
+     * For each day:
+     * <ul>
+     *     <li>Places the day number in the cell</li>
+     *     <li>Searches for symptom reports for that date</li>
+     *     <li>If found, appends the symptom identifiers after ":"</li>
+     *     <li>The cell renderer (see {@link SymptomsCalendar.SymptomCellRenderer}) draws
+     *         the colored squares corresponding to each symptom type</li>
+     * </ul>
+     * </p>
+     *
+     * @param month the selected month (1–12)
+     */
     public void updateTable(int month) {
         int year = LocalDate.now().getYear();
         YearMonth yearMonth = YearMonth.of(year, month);
@@ -213,7 +271,14 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
         table.setDefaultRenderer(Object.class, new SymptomCalendar.SymptomCellRenderer(colors));
     }
 
-    // Custom renderer
+    /**
+     * Table cell renderer that displays:
+     * <ul>
+     *     <li>The day number at the top-left</li>
+     *     <li>A row of small colored boxes representing symptoms reported that day</li>
+     *     <li>A tooltip listing the symptom names when scrolling over them with the mouse</li>
+     * </ul>
+     */
     static class SymptomCellRenderer extends JPanel implements javax.swing.table.TableCellRenderer {
         private final Map<String, Color> symptomColors;
         private JLabel dayLabel;
@@ -262,14 +327,13 @@ public class SymptomsCalendar extends JPanel implements ActionListener, MouseLis
                 }
             }
 
-            /*if (isSelected) {
-                setBackground(new Color(200, 220, 255));
-            }*/
-
             return this;
         }
     }
 
+    /**
+     * Navigates back to the main menu when the user clicks the corresponding button.
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource() == goBackButton) {

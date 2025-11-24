@@ -7,20 +7,37 @@ import pojos.SymptomType;
 import ui.components.MyButton;
 import ui.components.MyTextField;
 import ui.components.MyToggleButton;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
+/**
+ * Panel that allows a patient to record a new set of symptoms for a specific date.
+ * <p>
+ * This view is used from the patient menu to create a new {@link Report} containing
+ * all symptoms selected by the user, and a date chosen manually (defaulted to today).
+ * </p>
+ *
+ * <h3>Lifecycle</h3>
+ * <ul>
+ *     <li>The panel is created once in {@link PatientMenu} and reused each time the user enters it.</li>
+ *     <li>{@link #initPanel()} builds the full layout and UI components.</li>
+ *     <li>Every time the patient exits by saving or cancelling, {@link #resetPanel()} restores defaults:
+ *         <ul>
+ *             <li>Clears error messages</li>
+ *             <li>Resets date to today</li>
+ *             <li>Unselects all symptom toggle buttons</li>
+ *         </ul>
+ *     </li>
+ *     <li>When the user saves, a {@link Report} object is created and sent to the server,
+ *         and the panel returns to the main menu.</li>
+ * </ul>
+ */
 public class NewSymptomPanel extends JPanel implements ActionListener {
     //Format variables: Color and Font
     private final Color titleColor = Application.dark_purple;
@@ -38,20 +55,29 @@ public class NewSymptomPanel extends JPanel implements ActionListener {
     private ArrayList<JToggleButton> buttons;
     private MyTextField dateTxtField;
 
-    //
     private Application appMain;
-    private Report report;
-
+    /**
+     * Creates the symptoms panel and initializes the graphical layout.
+     *
+     * @param appMain reference to the main Application controller, used for
+     *                navigation and server communication.
+     */
     public NewSymptomPanel(Application appMain) {
-        //this.appMain = appMain;
         this.appMain = appMain;
         buttons = new ArrayList<>();
         initPanel();
-        report=new Report();
-
-
     }
-
+    /**
+     * Initializes the full panel layout:
+     * <ul>
+     *     <li>Title section</li>
+     *     <li>Scrollable grid of toggle buttons (one per {@link SymptomType})</li>
+     *     <li>Date selector</li>
+     *     <li>Error message field</li>
+     *     <li>Save and Cancel buttons</li>
+     * </ul>
+     * This method is called only once in the constructor.
+     */
     private void initPanel() {
         this.setLayout(new MigLayout("fill, inset 20", "[25%][25%][25%][25%]", "[][][][][][][][][][]"));
         this.setBackground(Color.white);
@@ -100,9 +126,7 @@ public class NewSymptomPanel extends JPanel implements ActionListener {
         JScrollPane scrollPane = new JScrollPane(interiorPanel);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-
         add(scrollPane, "cell 0 3 4 3, alignx center, growx");
-        //add(scrollPane, "cell 0 2 3 3, alignx center");
 
         errorMessage = new JLabel("Error");
         errorMessage.setForeground(Color.RED);
@@ -118,11 +142,29 @@ public class NewSymptomPanel extends JPanel implements ActionListener {
         add(cancel, "cell 2 7, alignx center, growx");
     }
 
+    /**
+     * Displays an error message in the panel. Errors are non-blocking and simply
+     * inform the user about invalid inputs (invalid date, no symptoms selected, etc.).
+     *
+     * @param message text to display below the symptoms list
+     */
     private void showErrorMessage(String message){
         errorMessage.setText(message);
         errorMessage.setVisible(true);
     }
 
+    /**
+     * Handles all button actions for the panel:
+     * <ul>
+     *     <li><b>Save</b> – Validates the date, extracts selected symptoms, sends
+     *         the report to the server, updates the local patient model, and navigates
+     *         back to the main menu.</li>
+     *     <li><b>Cancel</b> – Returns immediately to the main menu without saving
+     *         and resets the panel.</li>
+     * </ul>
+     *
+     * @param e triggered action event
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource() == save) {
@@ -164,10 +206,19 @@ public class NewSymptomPanel extends JPanel implements ActionListener {
             appMain.changeToMainMenu();
         }
     }
-
+    /**
+     * Resets the state of the panel so it is ready for the next time it is opened:
+     * <ul>
+     *     <li>Hides error messages</li>
+     *     <li>Resets date to today's date</li>
+     *     <li>Clears all selected symptom toggle buttons</li>
+     * </ul>
+     * <p>
+     * This method must always be called when leaving the panel.
+     * </p>
+     */
     private void resetPanel() {
         errorMessage.setVisible(false);
-        //report.setSymptomList(new ArrayList<>());
         dateTxtField.setText(LocalDate.now().toString());
         for(JToggleButton button : buttons) {
             if(button.isSelected()) {
