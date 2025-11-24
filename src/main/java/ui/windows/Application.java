@@ -37,7 +37,12 @@ public class Application extends JFrame {
 
 
     public static void main(String[] args) {
-        Application app = new Application();
+        Application app = null;
+        try {
+            app = new Application();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         app.showDialogIntroduceIP(app);
         //app.setVisible(true);
     }
@@ -49,7 +54,7 @@ public class Application extends JFrame {
     public Client client;
     private Integer serverPort = 9009;
 
-    public Application() {
+    public Application() throws Exception {
         appPanels = new ArrayList<JPanel>();
         initComponents();
         setBounds(100, 100, 602, 436);

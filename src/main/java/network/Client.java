@@ -9,11 +9,18 @@ import ui.windows.Application;
 import java.io.*;
 import java.net.Socket;
 import java.nio.Buffer;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import encryption.*;
+
+import javax.crypto.SecretKey;
 
 public class Client {
     Socket socket;
@@ -27,9 +34,14 @@ public class Client {
     //Y que otro thread los reciba (con take() o poll())
     //si no hay mensajes, take() se bloquea automáticamente, sin consumir CPU
     private BlockingQueue<JsonObject> responseQueue = new LinkedBlockingQueue<>();
+    private final KeyPair keyPair;
+    private PublicKey serverPublicKey;
+    private SecretKey AESkey;
 
-    public Client(Application appMain) {
+    public Client(Application appMain) throws Exception {
         this.appMain = appMain;
+        //generates the public and private key pair
+        this.keyPair = RSAKeyManager.generateKeyPair();
     }
 
     public Boolean connect(String ip, int port) {
@@ -84,6 +96,42 @@ public class Client {
 
                     String type = json.get("type").getAsString();
 
+                    // Store the server's public key
+                    if (type.equals("SERVER_PUBLIC_KEY")){
+                        String keyEncoded = json.get("data").getAsString();
+                        byte[] keyBytes = Base64.getDecoder().decode(keyEncoded);
+                        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+                        try{
+                            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+                            PublicKey serverPublicKey = keyFactory.generatePublic(keySpec);
+                            this.serverPublicKey = serverPublicKey;
+
+                            // Generate the AES temporary key
+                            this.AESkey = AESUtil.generateAESKey();
+                            System.out.println("AES key generated");
+
+                            // Encrypt AES key with the server's public key
+                            String encryptedAESKey = RSAUtil.encrypt(Base64.getEncoder().encodeToString(AESkey.getEncoded()), serverPublicKey);
+
+                            // Send the encrypted AES key to the server
+                            JsonObject AESkeyJson = new JsonObject();
+                            AESkeyJson.addProperty("type", "CLIENT_AES_KEY");
+                            AESkeyJson.addProperty("data", encryptedAESKey);
+                            out.println(gson.toJson(AESkeyJson));
+                            System.out.println("This is the Server's shared public RSA key: "+Base64.getEncoder().encodeToString(serverPublicKey.getEncoded()));
+                            System.out.println("This is the shared secret AES key: "+Base64.getEncoder().encodeToString(AESkey.getEncoded()));
+                            out.flush();
+
+
+                        }catch (Exception e){
+                            e.printStackTrace();
+                            System.out.println("Failed to fetch server public key");
+                        }
+
+                        continue;
+
+                    }
+
                     if (type.equals("STOP_CLIENT")) {
                         System.out.println("Server requested shutdown");
                         stopClient(false);
@@ -92,6 +140,7 @@ public class Client {
 
                     try {
                         responseQueue.put(json);
+
                     }catch (InterruptedException e){
                         JsonObject jsonObject = new JsonObject();
                         jsonObject.addProperty("type", "LOGIN_REQUEST_RESPONSE");
@@ -120,11 +169,20 @@ public class Client {
         }
     }
 
+    /**
+     * Sends messages as an introduction to the established connection to the Server.
+     *
+     * @throws IOException
+     */
     private void sendInitialMessage() throws IOException {
         System.out.println("Connection established... sending text");
         out.println("Hi! I'm a new client!\n");
     }
 
+    /**
+     *
+     * @param initiatedByClient
+     */
     public void stopClient(boolean initiatedByClient) {
         if (initiatedByClient && socket != null && !socket.isClosed()) {
             // Only send STOP_CLIENT if CLIENT requested shutdown
@@ -146,6 +204,25 @@ public class Client {
         releaseResources(out, in, socket);
     }
 
+    /**
+     * Sends a login request to the server provided the email and the password of a patient in the network. Then,
+     * handles the server's response and if successful, it loads additional patient data.
+     * <p>
+     *     Creates a Map to represent the login data and wraps it into a JSON-like map with a type and data fields.
+     *     It converts the whole Map into a JSON using Gson. Finally it sends the Json object over the output stream.
+     *     Waits for a response and gets the status response: either SUCCESS or ERROR.
+     *     If successful, it gets the user's id and role and creates the {@code User} object and
+     *     stores it. Then adds additional information about the patient by request.
+     * </p>
+     *
+     * @param email         The patient's email
+     * @param password      The patient's password
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws LogInError
+     *
+     * @see Gson
+     */
     public void login(String email, String password) throws IOException, InterruptedException, LogInError {
         //String message = "LOGIN;" + email + ";" + password;
         Map<String, Object> data = new HashMap<>();
@@ -155,11 +232,13 @@ public class Client {
 
         Map<String, Object> message = new HashMap<>();
         message.put("type", "LOGIN_REQUEST");
-        message.put("data", data);
+        message.put("data", data); //JSON-like map
 
         String jsonMessage = gson.toJson(message);
         out.println(jsonMessage); // send JSON message
+        System.out.println(jsonMessage);
 
+        //Waits for a response of type LOGIN_RESPONSE
         JsonObject response;
         do {
             response = responseQueue.take();
@@ -234,6 +313,7 @@ public class Client {
         }
         return doctor;
     }
+
 
     public void sendJsonToServer(String json, String ip, int port) throws Exception {
         Socket socket = new Socket(ip, port);
