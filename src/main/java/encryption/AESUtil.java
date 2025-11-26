@@ -47,14 +47,22 @@ public class AESUtil {
         return Base64.getEncoder().encodeToString(buffer.array());
     }
 
+    /**
+     *
+     *
+     * @param encryptedText     String that contains the encrypted data (previously encoded in Base64)
+     * @param AESkey            The shared secret key used for AES-GCM decryption
+     * @return
+     * @throws Exception    for simplicity
+     */
     public static String decrypt(String encryptedText, SecretKey AESkey) throws Exception{
-        byte[] decoded = Base64.getDecoder().decode(encryptedText);
-        ByteBuffer buffer = ByteBuffer.wrap(decoded);
+        byte[] decoded = Base64.getDecoder().decode(encryptedText); //decodes the input string into bytes
+        ByteBuffer buffer = ByteBuffer.wrap(decoded); //To easily read chunks
 
-        byte[] iv = new byte[iv_length_bytes];
+        byte[] iv = new byte[iv_length_bytes]; //allocates 12 bytes for the iv
         buffer.get(iv);
 
-        byte[] restEncrypted = new byte[buffer.remaining()];
+        byte[] restEncrypted = new byte[buffer.remaining()]; //message+tag
         buffer.get(restEncrypted);
 
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
@@ -63,6 +71,6 @@ public class AESUtil {
 
         byte[] decrypted = cipher.doFinal(restEncrypted);
 
-        return new String(decrypted, StandardCharsets.UTF_8);
+        return new String(decrypted, StandardCharsets.UTF_8); //readable string
     }
 }
