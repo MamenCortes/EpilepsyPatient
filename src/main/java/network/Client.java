@@ -7,11 +7,8 @@ import pojos.Report;
 import pojos.User;
 import ui.windows.Application;
 
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
 import java.io.*;
 import java.net.Socket;
-import java.nio.Buffer;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -22,8 +19,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import encryption.*;
 
 import javax.crypto.SecretKey;
@@ -40,14 +36,18 @@ public class Client {
     //Y que otro thread los reciba (con take() o poll())
     //si no hay mensajes, take() se bloquea automáticamente, sin consumir CPU
     private BlockingQueue<JsonObject> responseQueue = new LinkedBlockingQueue<>();
-    private final KeyPair keyPair;
+    private KeyPair keyPair;
     private PublicKey serverPublicKey;
     private SecretKey AESkey;
 
-    public Client(Application appMain) throws Exception {
+    public Client(Application appMain){
         this.appMain = appMain;
         //generates the public and private key pair
-        this.keyPair = RSAKeyManager.generateKeyPair();
+        try {
+            this.keyPair = RSAKeyManager.generateKeyPair();
+        }catch (Exception ex){
+            System.out.println("Error generating key pair: "+ex.getMessage());
+        }
     }
 
     public Boolean connect(String ip, int port) {
@@ -81,13 +81,14 @@ public class Client {
                 String line;
                 while (((line = in.readLine()) != null)&&running) {
                     //System.out.println("New message: " + line);
-                    JsonObject json = gson.fromJson(line, JsonObject.class);
+                    JsonObject request = gson.fromJson(line, JsonObject.class); //transforms the line into a Json Object
 
-                    String type = json.get("type").getAsString();
+                    String type = request.get("type").getAsString();
+                    System.out.println("\nThis is the encrypted message received from the Server: "+request);
 
                     // Store the server's public key
                     if (type.equals("SERVER_PUBLIC_KEY")){
-                        String keyEncoded = json.get("data").getAsString();
+                        String keyEncoded = request.get("data").getAsString();
                         byte[] keyBytes = Base64.getDecoder().decode(keyEncoded);
                         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
                         try{
@@ -97,7 +98,7 @@ public class Client {
 
                             // Generate the AES temporary key
                             this.AESkey = AESUtil.generateAESKey();
-                            System.out.println("AES key generated");
+                            System.out.println("\nAES key generated");
 
                             // Encrypt AES key with the server's public key
                             String encryptedAESKey = RSAUtil.encrypt(Base64.getEncoder().encodeToString(AESkey.getEncoded()), serverPublicKey);
@@ -121,14 +122,26 @@ public class Client {
 
                     }
 
-                    if (type.equals("STOP_CLIENT")) {
+                    // After the Client receives the Server's public key to encrypt the Secret key, reads responses
+                    String typeDecrypted = type;
+                    JsonObject decryptedRequest = request;
+                    if (typeDecrypted.equals("ENCRYPTED")){
+                        String encryptedData = request.get("data").getAsString();
+                        String decryptedJson = AESUtil.decrypt(encryptedData, AESkey);
+                        System.out.println("This is the decrypted json: "+decryptedJson);
+                        decryptedRequest = gson.fromJson(decryptedJson,JsonObject.class);
+                        typeDecrypted = decryptedRequest.get("type").getAsString();
+                    }
+                    System.out.println("\nThis is the decrypted type received in Client: "+typeDecrypted);
+
+                    if (typeDecrypted.equals("STOP_CLIENT")) {
                         System.out.println("Server requested shutdown");
                         stopClient(false);
                         break;
                     }
 
                     try {
-                        responseQueue.put(json);
+                        responseQueue.put(decryptedRequest); //TODO: this is where it is doing everything
                     }catch (InterruptedException e){
                         JsonObject jsonObject = new JsonObject();
                         jsonObject.addProperty("type", "LOGIN_REQUEST_RESPONSE");
@@ -142,6 +155,8 @@ public class Client {
                 System.out.println("Server connection closed: " + ex.getMessage());
                 //In case the connection is closed without the server asking for it first
                 stopClient(false);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         });
 
@@ -177,7 +192,10 @@ public class Client {
             Map<String, Object> message = new HashMap<>();
             message.put("type", "STOP_CLIENT");
             String jsonMessage = gson.toJson(message);
-            out.println(jsonMessage);
+            System.out.println("\nBefore encryption, STOP_CLIENT to Server: "+jsonMessage);
+            sendEncrypted(jsonMessage, out, AESkey);
+            // TODO: ENCRYPTED
+            //out.println(jsonMessage);
             System.out.println("Sent (client-initiated): " + jsonMessage);
         }
 
@@ -223,8 +241,9 @@ public class Client {
         message.put("data", data); //JSON-like map
 
         String jsonMessage = gson.toJson(message);
-        out.println(jsonMessage); // send JSON message
-        System.out.println(jsonMessage);
+        //TODO: ENCRYPTED
+        System.out.println("\nBefore encryption, LOGIN_REQUEST to Server: "+jsonMessage);
+        sendEncrypted(jsonMessage, out, AESkey); // send JSON message
 
         //Waits for a response of type LOGIN_RESPONSE
         JsonObject response;
@@ -254,7 +273,10 @@ public class Client {
             message.put("data", data);
 
             jsonMessage = gson.toJson(message);
-            out.println(jsonMessage); // send JSON message
+            System.out.println("\nBefore encryption, REQUEST_PATIENT_BY_EMAIL to Server: "+jsonMessage);
+            //TODO: ENCRYPTED
+            sendEncrypted(jsonMessage, out, AESkey);
+            //out.println(jsonMessage); // send JSON message
 
             // Read the response
             do {
@@ -287,7 +309,9 @@ public class Client {
         message.put("data", data);
 
         String jsonMessage = gson.toJson(message);
-        out.println(jsonMessage); // send JSON message
+        //TODO: ENCRYPTED
+        System.out.println("\n Before encryption REQUEST_DOCTOR_BY_ID message to Server: "+jsonMessage);
+        sendEncrypted(jsonMessage, out, AESkey);
 
         JsonObject response;
         do {
@@ -371,7 +395,8 @@ public class Client {
         message.put("data", data);
 
         String jsonMessage = gson.toJson(message);
-        out.println(jsonMessage); // send JSON message
+        //TODO: ENCRYPTION
+        sendEncrypted(jsonMessage, out, AESkey);
 
         JsonObject response;
         do {
@@ -382,6 +407,24 @@ public class Client {
         String status = response.get("status").getAsString();
         if (status.equals("ERROR")) {
             throw new ServerError(response.get("message").getAsString());
+        }
+    }
+
+    public void sendEncrypted(String message, PrintWriter out, SecretKey AESkey){
+        try{
+            String encryptedJson = AESUtil.encrypt(message, AESkey);
+            JsonObject wrapper = new JsonObject();
+
+            //TODO: ver si realmente el type debería ser especifico para cada case o no
+            wrapper.addProperty("type", "ENCRYPTED");
+            wrapper.addProperty("data", encryptedJson);
+
+            System.out.println("\nThis is the encrypted message sent to Server :"+wrapper);
+
+            out.println(wrapper);
+            out.flush();
+        }catch (Exception e){
+            e.printStackTrace();
         }
     }
 

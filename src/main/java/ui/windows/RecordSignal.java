@@ -20,6 +20,43 @@ import java.util.Base64;
 //TODO: al parar de grabar que pregunte si estás seguro
 //TODO: feedback sobre estableciendo la conexión y mandando datos
 //TODO: si ha fallado la conexión, botón para volver a enviarlo
+/**
+ * Panel that manages live physiological signal recording using a BITalino device.
+ * <p>
+ * This workflow includes:
+ * <ul>
+ *     <li>Entering the BITalino MAC address</li>
+ *     <li>Connecting to the device</li>
+ *     <li>Starting and stopping the acquisition</li>
+ *     <li>Compressing and uploading the collected data to the server</li>
+ *     <li>Displaying user feedback (recording animation, upload progress, errors)</li>
+ * </ul>
+ * </p>
+ *
+ * <h3>Lifecycle</h3>
+ * <ul>
+ *     <li>The panel is created once inside {@link PatientMenu} and reused each time the user enters it.</li>
+ *     <li>{@link #initPanel()} builds all connection and recording UI elements only once.</li>
+ *     <li>The internal state is controlled by:
+ *          <ul>
+ *              <li>{@code recording} – TRUE when acquisition is active</li>
+ *              <li>{@code saving} – TRUE during upload</li>
+ *          </ul>
+ *     </li>
+ *     <li>After leaving the panel (Back to Menu), {@link #resetPanel()} returns it to its initial state:
+ *          <ul>
+ *              <li>MAC address cleared</li>
+ *              <li>Recording animations reset</li>
+ *              <li>Error messages hidden</li>
+ *              <li>Button states restored</li>
+ *          </ul>
+ *     </li>
+ * </ul>
+ *
+ * @author MamenCortes
+ * @author MartaSanchezdelHoyo
+ * @author paulablancog
+ */
 public class RecordSignal extends JPanel implements ActionListener {
     //Format variables: Color and Font
     private final Color titleColor = Application.dark_purple;
@@ -69,12 +106,28 @@ public class RecordSignal extends JPanel implements ActionListener {
         frame.setLocationRelativeTo(null);
         frame.setContentPane(symptomPanel);
     }
-
+    /**
+     * Creates the record signal panel and initializes animations, buttons and UI layouts.
+     *
+     * @param app reference to the main application controller
+     */
     public RecordSignal(Application app) {
         appMain = app;
         initPanel();
     }
-
+    /**
+     * Initializes all UI components and layouts:
+     * <ul>
+     *     <li>Panel 1 — Connection to BITalino (MAC address + connect button)</li>
+     *     <li>Panel 2 — Recording interface with start/stop controls and animations</li>
+     *     <li>CardLayout — Enables switching between connection and recording views</li>
+     *     <li>Button stack — Swaps “Start Recording”, “Stop Recording”, or hides both</li>
+     * </ul>
+     * <p>
+     * This method is called once in the constructor; afterwards interaction
+     * is handled dynamically through card layouts and SwingWorker tasks.
+     * </p>
+     */
     private void initPanel() {
         this.setLayout(new MigLayout("fill, inset 20, wrap 4", "[25%][25%][25%][25%]", "[15%][60%][5%][5%]"));
         this.setBackground(Color.white);
@@ -100,7 +153,6 @@ public class RecordSignal extends JPanel implements ActionListener {
         connectBitalino.add(label);
 
         iptxtField = new MyTextField();
-        //iptxtField.setBackground(Application.light_purple);
         iptxtField.setPrefixIcon(new ImageIcon(getClass().getResource("/icons/pass.png")));
         iptxtField.setHint("Enter new MAC Address...");
         connectBitalino.add(iptxtField, "w 60%");
@@ -151,14 +203,10 @@ public class RecordSignal extends JPanel implements ActionListener {
 
         recordSignalPanel.add(image, "cell 0 0 2 1, growx");
         recordSignalPanel.add(errorMessage2, "cell 0 1 2 1, growx");
-        //recordSignalPanel.add(startRecording, "cell 0 2 2 1, center, growx");
-        //recordSignalPanel.add(stopRecording, "cell 0 2 2 1, center, growx");
 
         back2MenuBt = new MyButton();
         back2MenuBt.addActionListener(this);
         back2MenuBt.setText("BACK TO MENU");
-        //cancelButton.setBackground(Application.turquoise);
-        //cancelButton.setForeground(Color.white);
 
         cardPanel.add(connectBitalino, "Panel1");
         cardPanel.add(recordSignalPanel, "Panel2");
@@ -166,22 +214,42 @@ public class RecordSignal extends JPanel implements ActionListener {
         // Mostrar un panel:
         cardLayout.show(cardPanel, "Panel1");
         add(cardPanel, "cell 0 1 4 1, grow");
-        //add(errorMessage,"cell 0 2 4 1, growx, center" );
         add(back2MenuBt, "cell 0 2 4 1, center");
     }
-
+    /**
+     * Displays an error message (red) in any designated label.
+     *
+     * @param errorMessage   target label
+     * @param message message text
+     */
     private void showErrorMessage(JLabel errorMessage, String message) {
         errorMessage.setText(message);
         errorMessage.setVisible(true);
         errorMessage.setForeground(Color.red);
     }
-
+    /**
+     * Displays a positive feedback message (turquoise).
+     *
+     * @param errorMessage   target label
+     * @param message message text
+     */
     private void showFeedbackMessage(JLabel errorMessage, String message) {
         errorMessage.setText(message);
         errorMessage.setVisible(true);
         errorMessage.setForeground(contentColor);
     }
-
+    /**
+     * Handles all user actions in the panel:
+     * <ul>
+     *     <li><b>Connect</b>: Attempts to start the BITalino service and enters recording view.</li>
+     *     <li><b>Back to Menu</b>: Resets panel state and returns to main menu.</li>
+     *     <li><b>Start Recording</b>: Displays animation and prevents navigation until stopped.</li>
+     *     <li><b>Stop Recording</b>: Confirms with user, stops acquisition, uploads ZIP file
+     *         to server through a background task, and re-enables menu navigation.</li>
+     * </ul>
+     *
+     * @param e triggered ActionEvent
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource() == okButton){
@@ -227,7 +295,9 @@ public class RecordSignal extends JPanel implements ActionListener {
 
         }
     }
-
+    /**
+     * If saving fails, this dialog allows the user to retry the upload process.
+     */
     private void askRetry() {
         int option = JOptionPane.showConfirmDialog(
                 null,
@@ -247,7 +317,17 @@ public class RecordSignal extends JPanel implements ActionListener {
             recording = false;
         }
     }
-
+    /**
+     * Starts the asynchronous saving process:
+     * <ul>
+     *     <li>Stops the BITalino recorder</li>
+     *     <li>Retrieves the generated ZIP containing signal samples</li>
+     *     <li>Encodes ZIP as Base64</li>
+     *     <li>Sends it to the server with metadata (patient ID, sampling rate, timestamp)</li>
+     *     <li>Updates the UI with success or error animations/messages</li>
+     * </ul>
+     * This work is done inside a SwingWorker to avoid blocking the UI thread.
+     */
     private void startSavingProcess() {
         new SwingWorker<Boolean, Void>() {
             boolean success= false;
@@ -292,7 +372,16 @@ public class RecordSignal extends JPanel implements ActionListener {
             }
         }.execute();
     }
-
+    /**
+     * Resets all UI elements to the initial state:
+     * <ul>
+     *     <li>Switches to the connection panel</li>
+     *     <li>Restores button visibility</li>
+     *     <li>Resets animations to default image</li>
+     *     <li>Clears MAC address field</li>
+     *     <li>Hides error messages</li>
+     * </ul>
+     */
     private void resetPanel() {
         cardLayout.show(cardPanel, "Panel1");
         buttonsLayout.show(buttonStack, "START");

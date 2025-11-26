@@ -6,6 +6,8 @@ import javax.swing.plaf.basic.BasicToggleButtonUI;
 import java.awt.*;
 /**
  * Custom UI delegate for toggle buttons, applying padding and transparent background.
+ *
+ * @author MamenCortes
  */
 public class StyledToggleButtonUI extends BasicToggleButtonUI {
     @Override
