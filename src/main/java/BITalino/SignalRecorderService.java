@@ -2,13 +2,17 @@ package BITalino;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import network.Client;
 import org.junit.Test;
 import pojos.Signal;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.ZipFile;
@@ -21,12 +25,14 @@ public class SignalRecorderService {
 
     private BITalino bitalino;
     private boolean isRecording = false;
-
+    private boolean connected=false;
     private File csvTempFile;
     private File zipFile;
+    private RecordingController controller;
     private volatile boolean recordingInterrupted = false;
     private Thread saveThread;
-    private final int fs = 1000; // Sampling frequency
+    private ECGRealTimeAnalyzer analyzer;
+    private final int fs = 100; // Sampling frequency
     private final BlockingQueue<Frame> frameQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<Frame> saveQueue = new LinkedBlockingQueue<>();
 
@@ -40,18 +46,30 @@ public class SignalRecorderService {
         SignalRecorderService.MAC_ADDRESS = MAC_ADDRESS;
     }
 
+    public void setRecordingContoller (RecordingController controller) {
+        this.controller = controller;
+
+    }
     public int getFs() {
         return fs;
     }
-
-    public void startRecording() {
+    public void bitalinoConnect() {
         try {
             System.out.println("🔌 Conectando al BITalino...");
             bitalino = new BITalino();
             bitalino.open(MAC_ADDRESS, fs);
+            connected = true;
             System.out.println("✅ Conexión establecida.");
+        } catch (Exception e) {
+            System.out.println("❌ Error al conectar con BITalino en " + MAC_ADDRESS);
+            e.printStackTrace();
+        }
+    }
 
-            int[] channelsToRead = {1, 2, 3, 4};
+    public void startRecording() {
+        try {
+
+            int[] channelsToRead = {1,2}; // ECG en A2 y Acelerómetro en A1
             bitalino.start(channelsToRead);
 
             isRecording = true;
@@ -114,6 +132,10 @@ public class SignalRecorderService {
         return isRecording;
     }
 
+    public boolean isConnected() {
+        return connected;
+    }
+
     // ------------------------ THREADS ------------------------
 
     private class ReadThread implements Runnable {
@@ -127,7 +149,6 @@ public class SignalRecorderService {
 
                     for (Frame f : frames) {
                         if (f != null && f.analog != null) {
-                            System.out.println("📡 ECG recibido: " + f.analog[0]);
                             frameQueue.put(f);
                             saveQueue.put(f);
                         }
@@ -154,8 +175,6 @@ public class SignalRecorderService {
             }
         }catch (Exception ignored) {}
 
-        System.out.println("📁 Saving partial recording...");
-
         try {
                 saveThread.join(); // esperar a que guarde todo lo que ya tenía
                 zipFile = compressToZip(csvTempFile);
@@ -166,15 +185,39 @@ public class SignalRecorderService {
             }
         recordingInterrupted= true;
     }
+
+
     private class AnalyzeThread implements Runnable {
         @Override
         public void run() {
-            System.out.println("🟣 [AnalyzeThread] Iniciado");
+            AlarmManager alarmManager = new AlarmManager();
+            analyzer = new ECGRealTimeAnalyzer(fs, new ECGRealTimeAnalyzer.HRListener() {
+                @Override
+                public void onHeartRate(double hr) {
+                    System.out.println("HR: " + hr);
+                }
+                @Override
+                public void onPeakDetected(int sampleIndex) {
+                    System.out.println("R-peak at sample: " + sampleIndex);
+                }
+                @Override
+                public void onBradycardia(double hr) {
+                    System.out.println("⚠ BRADICARDIA: " + hr);
+                }
+                @Override
+                public void onTachycardia(double hr) {
+                    System.out.println("⚠ TAQUICARDIA: " + hr);
+                }
 
+            },   alarmManager);
+            boolean anomaly;
             try {
                 while (isRecording || !frameQueue.isEmpty()) {
                     Frame f = frameQueue.take();
-                    analyzeSignals(f);
+                    anomaly = analyzeSignals(f);
+                    if (anomaly) {
+                        controller.onAnomalyDetected();
+                    }
                 }
             } catch (Exception e) { e.printStackTrace(); }
 
@@ -202,17 +245,20 @@ public class SignalRecorderService {
         detectionManager.update(ts, hr, hrRising, movement);
     }
 
-    private void analyzeSignals(Frame f) {
-        double ecg = f.analog[0];
-        double ax = f.analog[1];
-        double ay = f.analog[2];
-        double az = f.analog[3];
+    private boolean analyzeSignals(Frame f) {
+        boolean anomaly =false;
+        double ecg = f.analog[1]; // ECG en A2
+        double acc= f.analog[0]; // Acelerómetro en A1
+        System.out.println(Arrays.toString(f.analog));
 
-        double accMagnitude = Math.sqrt(ax * ax + ay * ay + az * az);
+        anomaly=analyzer.addSample(ecg);
+        double accMagnitude = acc;
 
-        if (ecg > 800) System.out.println("⚠️ ECG alto: " + ecg);
-        if (accMagnitude > 1200) System.out.println("⚡ Movimiento brusco: " + accMagnitude);
-        if (ecg > 900 && accMagnitude > 1200) System.out.println("🚨 Posible ataque detectado");
+        if(anomaly && accMagnitude > 1200){
+            System.out.println("⚠ POSIBLE ATAQUE: " + accMagnitude);
+            return true;
+        }
+        return anomaly;
     }
 
     private class SaveThread implements Runnable {
@@ -229,10 +275,8 @@ public class SignalRecorderService {
                         Frame f = saveQueue.take();
 
                         writer.write(
-                                f.analog[0] + ";" +
-                                        f.analog[1] + ";" +
-                                        f.analog[2] + ";" +
-                                        f.analog[3] + "\n"
+                                f.analog[1] + ";" + // ECG en A2
+                                        f.analog[0] + "\n" // Acelerómetro en A1
                         );
                     }
                 }
@@ -358,8 +402,6 @@ public class SignalRecorderService {
             public String timestamp;
         }
     }
-
-
 
 }
 
