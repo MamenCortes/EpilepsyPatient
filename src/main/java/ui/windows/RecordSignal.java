@@ -1,8 +1,10 @@
 package ui.windows;
 
+import BITalino.RecordingController;
 import com.google.gson.JsonObject;
 import net.miginfocom.swing.MigLayout;
 import BITalino.SignalRecorderService;
+import ui.components.AreYouOkayPopup;
 import ui.components.MyButton;
 import ui.components.MyTextField;
 
@@ -187,10 +189,10 @@ public class RecordSignal extends JPanel implements ActionListener {
             showFeedbackMessage(errorMessage2, "Clic start to start recording");
             String macAdd = iptxtField.getText();
             System.out.println(macAdd);
+            //cambiar a conneted and start recording panel
             recorderService = new SignalRecorderService(macAdd);
-            recorderService.startRecording();
-
-            if (recorderService.isRecording()) {
+            recorderService.bitalinoConnect();
+            if (recorderService.isConnected()) {
                 cardLayout.show(cardPanel, "Panel2");
             } else {
                 showFeedbackMessage(errorMessage, "Connection failed");
@@ -201,6 +203,9 @@ public class RecordSignal extends JPanel implements ActionListener {
             resetPanel();
             appMain.changeToMainMenu();
         } else if (e.getSource() == startRecording) {
+            recorderService.startRecording();
+            RecordingController controller = new RecordingController(new AreYouOkayPopup(), appMain, appMain.patient);
+            recorderService.setRecordingContoller(controller);
             if(!recording){
                 image.setIcon(recordingGif);
                 showFeedbackMessage(errorMessage2, "Recording...");
@@ -245,28 +250,21 @@ public class RecordSignal extends JPanel implements ActionListener {
 
     private void startSavingProcess() {
         new SwingWorker<Boolean, Void>() {
-
+            boolean success= false;
             @Override
             protected Boolean doInBackground() {
                 try {
                     recorderService.stopRecording();
                     lastZipFile = recorderService.getZipFile();
-                    JsonObject request = new JsonObject();
-                    request.addProperty("type", "UPLOAD_SIGNAL");
-                    JsonObject metadata = new JsonObject();
-                    metadata.addProperty("patient_id", appMain.patient.getId());
-                    metadata.addProperty("sampling_rate", recorderService.getFs());
-                    metadata.addProperty("date", LocalDateTime.now().toString());
-                    request.add("metadata", metadata);
-                    request.addProperty("compression", "zip-base64");
-                    request.addProperty("filename", lastZipFile.getName());
+                    int patient_id= appMain.patient.getId();
+                    int sampling_rate= recorderService.getFs();
+                    LocalDateTime timestamp= LocalDateTime.now();
+                    String filename= lastZipFile.getName();
                     byte[] zipBytes = Files.readAllBytes(lastZipFile.toPath());
                     String base64Zip = Base64.getEncoder().encodeToString(zipBytes);
-                    request.addProperty("data", base64Zip);
-                    System.out.println(request);
-                    appMain.client.sendJsonToServer(String.valueOf(request));
+                   success= appMain.client.sendJsonToServer( patient_id, sampling_rate, timestamp, filename, base64Zip);
                     Thread.sleep(3000);
-                    return true;
+                    return success;
                 } catch (Exception e) {
                     e.printStackTrace();
                     return false;
@@ -277,18 +275,18 @@ public class RecordSignal extends JPanel implements ActionListener {
             protected void done() {
                 try {
                     boolean success = get();
+
                     if (success) {
                         image.setIcon(uploadedImg);
                         showFeedbackMessage(errorMessage2, "Signal saved successfully.");
                         back2MenuBt.setVisible(true);
-                        //startRecording.setVisible(true);
                         buttonsLayout.show(buttonStack, "START");
                         recording = false;
                     } else {
                         askRetry();
                     }
-
-                } catch (Exception e) {
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                     askRetry();
                 }
             }

@@ -18,6 +18,7 @@ import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -301,11 +302,48 @@ public class Client {
         return doctor;
     }
 
-    public void sendJsonToServer(String json) throws Exception {
+    public boolean sendJsonToServer(int patientId, int samplingFrequency, LocalDateTime timestamp, String filename, String base64Zip) throws Exception {
+
+        // 1. Construir JSON raíz
+        JsonObject root = new JsonObject();
+        root.addProperty("type", "UPLOAD_SIGNAL");
+        root.addProperty("filename", filename);
+
+        // 2. Metadata
+        JsonObject metadata = new JsonObject();
+        metadata.addProperty("patient_id", patientId);
+        metadata.addProperty("sampling_rate", samplingFrequency);
+        metadata.addProperty("timestamp", timestamp.toString());
+
+        root.add("metadata", metadata);
+
+        // 3. Datos (ZIP Base64)
+        root.addProperty("dataBytes", base64Zip);
+
+        String json = gson.toJson(root);
+        System.out.println("➡ Sending JSON:");
+        System.out.println(json);
+
+        // 4. Enviar al servidor
         out.println(json);
         out.flush();
 
+        // 5. Esperar la respuesta del servidor
+        JsonObject response;
+        do {
+            response = responseQueue.take();
+            System.out.println("⬅ Received: " + response);
+        } while (!response.get("type").getAsString().equals("UPLOAD_SIGNAL_RESPONSE"));
+
+        // 6. Procesar respuesta
+        String status = response.get("status").getAsString();
+        if (status.equals("ERROR")) {
+            throw new ServerError(response.get("message").getAsString());
+        }
+
+        return true;
     }
+
     private static void releaseResources(PrintWriter printWriter, BufferedReader in,Socket socket) {
         printWriter.close();
         try{
@@ -347,5 +385,21 @@ public class Client {
         }
     }
 
+    public void sendAlertToAdmin(Patient patient) {
+        try {
+            Map<String, Object> data = new HashMap<>();
+            data.put("patient", patient.toJson());
+
+            Map<String, Object> message = new HashMap<>();
+            message.put("type", "ALERT_ADMIN");
+            message.put("data", data);
+
+            String jsonMessage = gson.toJson(message);
+            System.out.println("Sending alert to admin: " + jsonMessage);
+            out.println(jsonMessage); // send JSON message
+        } catch (Exception e) {
+            System.out.println("Error sending alert to admin: " + e.getMessage());
+        }
+    }
 }
 
