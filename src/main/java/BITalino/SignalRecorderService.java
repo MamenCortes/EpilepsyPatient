@@ -30,6 +30,12 @@ public class SignalRecorderService {
     private final BlockingQueue<Frame> frameQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<Frame> saveQueue = new LinkedBlockingQueue<>();
 
+    //TODO: eliminar si se decide no implementar así
+    private EcgProcessor ecgProcessor = new EcgProcessor();
+    private AccProcessor accProcessor = new AccProcessor();
+    private DetectionManager detectionManager = new DetectionManager();
+
+
     public SignalRecorderService(String MAC_ADDRESS) {
         SignalRecorderService.MAC_ADDRESS = MAC_ADDRESS;
     }
@@ -174,6 +180,26 @@ public class SignalRecorderService {
 
             System.out.println("🟣 [AnalyzeThread] Finalizado");
         }
+    }
+
+    //TODO: revisar
+    //Alternative analyzeDignal function implementing the ecgProcessor and accProcessor
+    private void analyzeSignals2(Frame f) {
+        long ts = System.currentTimeMillis();
+
+        double ecg = f.analog[0];
+        double ax = f.analog[1];
+        double ay = f.analog[2];
+        double az = f.analog[3];
+
+        ecgProcessor.addSample(ecg, ts);
+        accProcessor.addSample(ax, ay, az, ts);
+
+        double hr = ecgProcessor.getCurrentHeartRate();
+        boolean hrRising = ecgProcessor.isHeartRateRising();
+        MovementState movement = accProcessor.getMovementState();
+
+        detectionManager.update(ts, hr, hrRising, movement);
     }
 
     private void analyzeSignals(Frame f) {
