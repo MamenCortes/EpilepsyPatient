@@ -1,10 +1,9 @@
 package network;
 
+import Events.ServerDisconnectedEvent;
+import Events.UIEventBus;
 import com.google.gson.*;
-import pojos.Doctor;
-import pojos.Patient;
-import pojos.Report;
-import pojos.User;
+import pojos.*;
 import ui.windows.Application;
 
 import java.io.*;
@@ -13,6 +12,9 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -25,7 +27,7 @@ public class Client {
     Socket socket;
     PrintWriter out;
     BufferedReader in;
-    private Application appMain;
+    //private Application appMain;
     private Gson gson = new Gson();
     private volatile Boolean running;
     //Estructura diseñada para comunicar threads entre sí de manera segura y sincronizada
@@ -37,8 +39,8 @@ public class Client {
     private PublicKey serverPublicKey;
     private SecretKey AESkey;
 
-    public Client(Application appMain){
-        this.appMain = appMain;
+    public Client(){
+        //this.appMain = appMain;
         //generates the public and private key pair
         try {
             this.keyPair = RSAKeyManager.generateKeyPair();
@@ -201,7 +203,8 @@ public class Client {
 
         // Notify UI ONLY if the server disconnected
         if (!initiatedByClient) {
-            appMain.onServerDisconnected();
+            UIEventBus.BUS.post(new ServerDisconnectedEvent());
+            //appMain.onServerDisconnected();
         }
 
         releaseResources(out, in, socket);
@@ -226,7 +229,7 @@ public class Client {
      *
      * @see Gson
      */
-    public void login(String email, String password) throws IOException, InterruptedException, LogInError {
+    public AppData login(String email, String password) throws IOException, InterruptedException, LogInError {
         //String message = "LOGIN;" + email + ";" + password;
         Map<String, Object> data = new HashMap<>();
         data.put("email", email);
@@ -249,6 +252,7 @@ public class Client {
         } while (!response.get("type").getAsString().equals("LOGIN_RESPONSE"));
 
 
+        AppData appData = new AppData();
         // Check response
         String status = response.get("status").getAsString();
         if (status.equals("SUCCESS")) {
@@ -259,7 +263,8 @@ public class Client {
             System.out.println("User ID: " + id + ", Role: " + role);
 
             User user = new User(id, email, password, role);
-            appMain.user = user;
+            //appMain.user = user; //TODO; eliminar
+            appData.setUser(user);
 
             //Request doctor data
             message.clear();
@@ -287,7 +292,9 @@ public class Client {
 
             Patient patient = Patient.fromJason(response.getAsJsonObject("patient"));
             System.out.println(patient);
-            appMain.patient = patient;
+            //appMain.patient = patient; //TODO: eliminar
+            appData.setPatient(patient);
+            return appData;
         } else {
             throw new LogInError(response.get("message").getAsString());
         }
@@ -323,11 +330,48 @@ public class Client {
         return doctor;
     }
 
-    public void sendJsonToServer(String json) throws Exception {
+    public boolean sendJsonToServer(int patientId, int samplingFrequency, LocalDateTime timestamp, String filename, String base64Zip) throws Exception {
+
+        // 1. Construir JSON raíz
+        JsonObject root = new JsonObject();
+        root.addProperty("type", "UPLOAD_SIGNAL");
+        root.addProperty("filename", filename);
+
+        // 2. Metadata
+        JsonObject metadata = new JsonObject();
+        metadata.addProperty("patient_id", patientId);
+        metadata.addProperty("sampling_rate", samplingFrequency);
+        metadata.addProperty("timestamp", timestamp.toString());
+
+        root.add("metadata", metadata);
+
+        // 3. Datos (ZIP Base64)
+        root.addProperty("dataBytes", base64Zip);
+
+        String json = gson.toJson(root);
+        System.out.println("➡ Sending JSON:");
+        System.out.println(json);
+
+        // 4. Enviar al servidor
         out.println(json);
         out.flush();
 
+        // 5. Esperar la respuesta del servidor
+        JsonObject response;
+        do {
+            response = responseQueue.take();
+            System.out.println("⬅ Received: " + response);
+        } while (!response.get("type").getAsString().equals("UPLOAD_SIGNAL_RESPONSE"));
+
+        // 6. Procesar respuesta
+        String status = response.get("status").getAsString();
+        if (status.equals("ERROR")) {
+            throw new ServerError(response.get("message").getAsString());
+        }
+
+        return true;
     }
+
     private static void releaseResources(PrintWriter printWriter, BufferedReader in,Socket socket) {
         printWriter.close();
         try{
@@ -416,5 +460,21 @@ public class Client {
         }
     }
 
+    public void sendAlertToAdmin(Patient patient) {
+        try {
+            Map<String, Object> data = new HashMap<>();
+            data.put("patient", patient.toJson());
+
+            Map<String, Object> message = new HashMap<>();
+            message.put("type", "ALERT_ADMIN");
+            message.put("data", data);
+
+            String jsonMessage = gson.toJson(message);
+            System.out.println("Sending alert to admin: " + jsonMessage);
+            out.println(jsonMessage); // send JSON message
+        } catch (Exception e) {
+            System.out.println("Error sending alert to admin: " + e.getMessage());
+        }
+    }
 }
 

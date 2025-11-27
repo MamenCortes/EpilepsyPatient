@@ -10,6 +10,8 @@ import javax.swing.*;
 
 import net.miginfocom.swing.MigLayout;
 import network.LogInError;
+import pojos.AppData;
+import pojos.Patient;
 import pojos.User;
 import ui.components.*;
 
@@ -275,6 +277,16 @@ public class UserLogIn extends JPanel implements ActionListener{
             try {
                 appMenu.client.login(email, password);
                 return true;
+                AppData appdata = appMain.client.login(email, password);
+                System.out.println(appdata);
+                if(appdata.getPatient() != null && appdata.getUser() != null) {
+                    appMain.patient = appdata.getPatient();
+                    appMain.user = appdata.getUser();
+                    return true;
+                }else{
+                    showErrorMessage("Error retrieving Patient and User data");
+                    return false;
+                }
             } catch (IOException | InterruptedException | LogInError e) {
                 showErrorMessage(e.getMessage());
                 return false;

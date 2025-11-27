@@ -258,4 +258,16 @@ public class Patient {
         return jason;
     }
 
+    public Object toJson() {
+        JsonObject jason = new JsonObject();
+        jason.addProperty("id", id);
+        jason.addProperty("name", name);
+        jason.addProperty("surname", surname);
+        jason.addProperty("email", email);
+        jason.addProperty("contact", phone);
+        jason.addProperty("dateOfBirth", dateOfBirth.toString());
+        jason.addProperty("gender", gender);
+        jason.addProperty("doctorId", doctor_id);
+        return jason;
+    }
 }

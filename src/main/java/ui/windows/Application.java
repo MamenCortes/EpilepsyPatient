@@ -1,4 +1,10 @@
 package ui.windows;
+import BITalino.DetectionManager;
+import Events.ServerDisconnectedEvent;
+import com.google.common.eventbus.Subscribe;
+import Events.ShowHelpDialogEvent;
+import Events.UIEventBus;
+import net.miginfocom.swing.MigLayout;
 import pojos.Doctor;
 import pojos.Patient;
 import pojos.User;
@@ -79,6 +85,7 @@ public class Application extends JFrame {
     public User user;
     public Client client;
     private Integer serverPort = 9009;
+    public DetectionManager detectionManager;
 
     /**
      * Constructs the application window:
@@ -101,7 +108,99 @@ public class Application extends JFrame {
         setContentPane(logInPanel);
 
         //Initialize client
-        client = new Client( this);
+        client = new Client();
+
+        //Subscribe to events
+        detectionManager = new DetectionManager();
+        UIEventBus.BUS.register(this); //Listens for events
+    }
+
+    @Subscribe
+    public void onShowHelpDialog(ShowHelpDialogEvent event){
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                int result = JOptionPane.showConfirmDialog(
+                        null,
+                        "We detected abnormal heart rate and movement.\nDo you need help?",
+                        "Possible Seizure Detected",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                );
+
+                if (result == JOptionPane.NO_OPTION) {
+                    // User is fine – inform DetectionManager
+                    detectionManager.onUserOk();
+                }
+            }
+        });
+    }
+
+    /**
+     * Called automatically when the connection to the server is lost.
+     * Shows an error message and prompts the user to enter a new IP.
+     */
+    @Subscribe
+    public void onServerDisconnected(ServerDisconnectedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+
+            /*JOptionPane.showMessageDialog(
+                    null,
+                    "The conexion with the server was interrupted.",
+                    "Conexion error",
+                    JOptionPane.ERROR_MESSAGE
+            );*/
+
+            showMessageDialog(this, "The conexion with the server was interrupted");
+
+            // Espera a que el message dialog finalice y luego lanza el siguiente diálogo
+            SwingUtilities.invokeLater(() -> {
+                this.showDialogIntroduceIP(this);
+                System.out.println("Requested new IP address");
+            });
+        });
+    }
+
+    /**
+     * Utility method to display a custom message dialog using a Night Guardian–styled window.
+     *
+     * @param parentFrame the parent frame for centering the dialog
+     * @param message the message to display
+     */
+    public static void showMessageDialog(JFrame parentFrame, String message) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new MigLayout("wrap, fill, inset 15", "[center]", "push[]25[]push"));
+        panel.setBackground(Color.white);
+        panel.setPreferredSize(new Dimension(250, 150));
+
+        JLabel label = new JLabel(message);
+        label.setFont(new Font("sansserif", 1, 25));
+        label.setForeground(Application.dark_purple);
+
+        JTextArea labelLikeText = new JTextArea(message);
+        labelLikeText.setLineWrap(true);
+        labelLikeText.setWrapStyleWord(true);
+        labelLikeText.setEditable(false);
+        labelLikeText.setOpaque(false); // looks like a JLabel
+        labelLikeText.setFont(new Font("sansserif", 1, 20));
+        labelLikeText.setBackground(Color.white);
+        labelLikeText.setForeground(Application.dark_purple);
+        panel.add(labelLikeText, "growx, center, wrap");
+
+        MyButton okButton = new MyButton("OK", Application.turquoise, Color.white);
+        panel.add(okButton, "center");
+
+        JDialog dialog = new JDialog(parentFrame, "Message dialog", true); //dont allow interacting with other panels at the same time
+        dialog.getContentPane().add(panel);
+        dialog.getContentPane().setBackground(Color.white);
+        dialog.pack();
+        dialog.setLocationRelativeTo(parentFrame);
+
+        okButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {dialog.dispose();}
+        });
+
+        dialog.setVisible(true);
     }
 
     /**
@@ -236,28 +335,9 @@ public class Application extends JFrame {
             client.stopClient(true);
         }
         dispose();
+        //unsuscribe from events
+        UIEventBus.BUS.unregister(this);
         System.exit(0);
-    }
-    /**
-     * Called automatically when the connection to the server is lost.
-     * Shows an error message and prompts the user to enter a new IP.
-     */
-    public void onServerDisconnected() {
-        SwingUtilities.invokeLater(() -> {
-
-            JOptionPane.showMessageDialog(
-                    null,
-                    "The conexion with the server was interrupted.",
-                    "Conexion error",
-                    JOptionPane.ERROR_MESSAGE
-            );
-
-            // Espera a que el message dialog finalice y luego lanza el siguiente diálogo
-            SwingUtilities.invokeLater(() -> {
-                this.showDialogIntroduceIP(this);
-                System.out.println("Requested new IP address");
-            });
-        });
     }
 
 }

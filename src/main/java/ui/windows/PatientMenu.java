@@ -134,7 +134,7 @@ public class PatientMenu extends MenuTemplate {
             patientInfoPanel.updatePatientForm(appMenu.patient);
             appMenu.changeToPanel(patientInfoPanel);
         }else if(e.getSource()== seeRecordingHistory) {
-            recordingsHistoryPanel.updateSignalRecordingsList(ModelManager.generateRandomSignalRecordings());
+            recordingsHistoryPanel.updateSignalRecordingsList(appMenu.patient.getSignalRecordingsList());
             appMenu.changeToPanel(recordingsHistoryPanel);
         }else if(e.getSource()== recordBitalino) {
             appMenu.changeToPanel(recordSignalPanel);
