@@ -1,7 +1,5 @@
 package ui.windows;
 
-import BITalino.RecordingController;
-import com.google.gson.JsonObject;
 import net.miginfocom.swing.MigLayout;
 import BITalino.SignalRecorderService;
 import ui.components.AreYouOkayPopup;
@@ -272,8 +270,6 @@ public class RecordSignal extends JPanel implements ActionListener {
             appMain.changeToMainMenu();
         } else if (e.getSource() == startRecording) {
             recorderService.startRecording();
-            RecordingController controller = new RecordingController(new AreYouOkayPopup(), appMain, appMain.patient);
-            recorderService.setRecordingContoller(controller);
             if(!recording){
                 image.setIcon(recordingGif);
                 showFeedbackMessage(errorMessage2, "Recording...");

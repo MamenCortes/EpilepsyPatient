@@ -1,5 +1,7 @@
 package BITalino;
 
+import Events.BITalinoDisconnectedEvent;
+import Events.UIEventBus;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import network.Client;
@@ -28,10 +30,9 @@ public class SignalRecorderService {
     private boolean connected=false;
     private File csvTempFile;
     private File zipFile;
-    private RecordingController controller;
+    //private RecordingController controller;
     private volatile boolean recordingInterrupted = false;
     private Thread saveThread;
-    private ECGRealTimeAnalyzer analyzer;
     private final int fs = 100; // Sampling frequency
     private final BlockingQueue<Frame> frameQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<Frame> saveQueue = new LinkedBlockingQueue<>();
@@ -46,10 +47,10 @@ public class SignalRecorderService {
         SignalRecorderService.MAC_ADDRESS = MAC_ADDRESS;
     }
 
-    public void setRecordingContoller (RecordingController controller) {
+   /* public void setRecordingContoller (RecordingController controller) {
         this.controller = controller;
 
-    }
+    }*/
     public int getFs() {
         return fs;
     }
@@ -148,8 +149,10 @@ public class SignalRecorderService {
                 try {
                     handleBitalinoDisconnection();
                 } catch (BITalinoException ex) {
+                    UIEventBus.BUS.post(new BITalinoDisconnectedEvent());
                     throw new RuntimeException(ex);
                     //TODO avisar al controller para que haga el ui correspondiente
+
                 }
             }
 
@@ -188,53 +191,32 @@ public class SignalRecorderService {
     private class AnalyzeThread implements Runnable {
         @Override
         public void run() {
-            AlarmManager alarmManager = new AlarmManager();
-            analyzer = new ECGRealTimeAnalyzer(fs, new ECGRealTimeAnalyzer.HRListener() {
-                @Override
-                public void onHeartRate(double hr) {
-                    System.out.println("HR: " + hr);
-                }
-                @Override
-                public void onPeakDetected(int sampleIndex) {
-                    System.out.println("R-peak at sample: " + sampleIndex);
-                }
-                @Override
-                public void onBradycardia(double hr) {
-                    System.out.println("⚠ BRADICARDIA: " + hr);
-                }
-                @Override
-                public void onTachycardia(double hr) {
-                    System.out.println("⚠ TAQUICARDIA: " + hr);
-                }
-
-            },   alarmManager);
             boolean anomaly;
             try {
                 while (isRecording || !frameQueue.isEmpty()) {
                     Frame f = frameQueue.take();
-                    anomaly = analyzeSignals(f);
-                    if (anomaly) {
-                        controller.onAnomalyDetected();
-                    }
+                    analyzeSignals(f);
                 }
             } catch (Exception e) { e.printStackTrace(); }
 
             System.out.println("🟣 [AnalyzeThread] Finalizado");
+
         }
+
+
+
     }
 
     //TODO: revisar
     //Alternative analyzeDignal function implementing the ecgProcessor and accProcessor
-    private void analyzeSignals2(Frame f) {
+    private void analyzeSignals(Frame f) {
         long ts = System.currentTimeMillis();
 
-        double ecg = f.analog[0];
-        double ax = f.analog[1];
-        double ay = f.analog[2];
-        double az = f.analog[3];
+        double ecg = f.analog[0]; // ECG en A2
+        double acc= f.analog[1];
 
         ecgProcessor.addSample(ecg, ts);
-        accProcessor.addSample(ax, ay, az, ts);
+        accProcessor.addSample(acc, ts);
 
         double hr = ecgProcessor.getCurrentHeartRate();
         boolean hrRising = ecgProcessor.isHeartRateRising();
@@ -243,21 +225,6 @@ public class SignalRecorderService {
         detectionManager.update(ts, hr, hrRising, movement);
     }
 
-    private boolean analyzeSignals(Frame f) {
-        boolean anomaly =false;
-        double ecg = f.analog[0]; // ECG en A2
-        double acc= f.analog[1]; // Acelerómetro en A6
-        System.out.println(Arrays.toString(f.analog));
-
-        anomaly=analyzer.addSample(ecg);
-        double accMagnitude = acc;
-
-        if(anomaly && accMagnitude > 1200){
-            System.out.println("⚠ POSIBLE ATAQUE: " + accMagnitude);
-            return true;
-        }
-        return anomaly;
-    }
 
     private class SaveThread implements Runnable {
         @Override

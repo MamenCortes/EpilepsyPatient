@@ -1,9 +1,7 @@
 package ui.windows;
 import BITalino.DetectionManager;
-import Events.ServerDisconnectedEvent;
+import Events.*;
 import com.google.common.eventbus.Subscribe;
-import Events.ShowHelpDialogEvent;
-import Events.UIEventBus;
 import net.miginfocom.swing.MigLayout;
 import pojos.Doctor;
 import pojos.Patient;
@@ -21,6 +19,11 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Main application window and controller responsible for:
  * <ul>
@@ -68,7 +71,8 @@ public class Application extends JFrame {
     public static Color lighter_turquoise = new Color(243, 250, 249);//#f3faf9
     public static Color darker_turquoise = new Color(73, 129, 122);
     public static Color dark_turquoise = new Color(52, 152, 143); //#34988f
-
+    private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private Future<?> pendingAlarm = null;
     /**
      * Entry point of the graphical application.
      *
@@ -126,15 +130,34 @@ public class Application extends JFrame {
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE
                 );
-
+                startOneMinuteTimer(() -> onTimeoutNoResponse());
                 if (result == JOptionPane.NO_OPTION) {
                     // User is fine – inform DetectionManager
                     detectionManager.onUserOk();
+                    if (pendingAlarm != null && !pendingAlarm.isDone()) {
+                        pendingAlarm.cancel(true);
+                    }
+
+                    System.out.println("🟢 Patient responded on time");
+
                 }
             }
         });
     }
+    private void onTimeoutNoResponse() {
+        System.out.println("🔴 patient did not respond → ALERT");
 
+        SwingUtilities.invokeLater(() -> {
+            // Aquí va lo que quieres que pase si NO responde
+            String alert=client.sendAlertToAdmin();
+            showMessageDialog(this, alert);
+        });
+    }
+@Subscribe
+public void onAllertConfirmed(AlertMessageEvent event) {
+    String alert=client.sendAlertToAdmin();
+    showMessageDialog(this, alert);
+}
     /**
      * Called automatically when the connection to the server is lost.
      * Shows an error message and prompts the user to enter a new IP.
@@ -201,6 +224,13 @@ public class Application extends JFrame {
         });
 
         dialog.setVisible(true);
+    }
+
+    @Subscribe
+    public void onBitalinoDisconnected(BITalinoDisconnectedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            showMessageDialog(this, "The connection with the BITalino device was interrupted.");
+        });
     }
 
     /**
@@ -338,6 +368,18 @@ public class Application extends JFrame {
         //unsuscribe from events
         UIEventBus.BUS.unregister(this);
         System.exit(0);
+    }
+    public void startOneMinuteTimer(Runnable onTimeout) {
+
+        // Cancelar temporizador anterior si existe
+        if (pendingAlarm != null && !pendingAlarm.isDone()) {
+            pendingAlarm.cancel(true);
+        }
+
+        // Programar el timeout de 60s
+        pendingAlarm = scheduler.schedule(() -> {
+            onTimeout.run();   // Esto se ejecuta si NO hay respuesta
+        }, 60, TimeUnit.SECONDS);
     }
 
 }
