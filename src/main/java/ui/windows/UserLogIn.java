@@ -4,14 +4,13 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 import javax.swing.*;
 
 import net.miginfocom.swing.MigLayout;
 import network.LogInError;
+import pojos.AppData;
 import pojos.Patient;
 import pojos.User;
 import ui.components.*;
@@ -43,7 +42,7 @@ public class UserLogIn extends JPanel implements ActionListener{
     private JPanel panelLogIn;
     private MyButton applyLogIn;
     private MyButton changePassword;
-    private Application appMain;
+    private Application appMenu;
     private MyTextField emailTxF;
     private MyTextField passwordTxF;
     private MyTextField emailTxFLogIn;
@@ -56,10 +55,10 @@ public class UserLogIn extends JPanel implements ActionListener{
      * Creates the login panel, sets the main layout, initializes all required UI
      * components and builds both the login form and the graphical cover panel.
      *
-     * @param appMain reference to the central {@link Application} controller
+     * @param appMenu reference to the central {@link Application} controller
      */
-    public UserLogIn(Application appMain) {
-        this.appMain = appMain;
+    public UserLogIn(Application appMenu) {
+        this.appMenu = appMenu;
         this.setLayout(new MigLayout("fill, inset 0, gap 0", "[30]0px[70:pref]", "[]"));
         init();
 
@@ -189,12 +188,12 @@ public class UserLogIn extends JPanel implements ActionListener{
             System.out.println("LogIn");
             if(logIn()) {
                 resetPanel();
-                appMain.changeToMainMenu();
+                appMenu.changeToMainMenu();
             }
 
         }else if(e.getSource() == changePassword) {
             if(canChangePassword()) {
-                showChangePasswordPane(appMain);
+                showChangePasswordPane(appMenu);
             }
 
         }
@@ -228,15 +227,17 @@ public class UserLogIn extends JPanel implements ActionListener{
             public void actionPerformed(ActionEvent e) {
                 String pass1 = password1.getText();
                 String pass2 = password2.getText();
+                String email = emailTxFLogIn.getText();
                 if(pass1 != null && pass1.equals(pass2) && !pass1.isBlank()) {
                     if(validatePassword(pass2)) {
-                        //TODO: call client to changePassword
-                        /*User u = appMenu.jpaUserMan.getUserByEmail(emailString);
-                        if(!appMenu.jpaUserMan.changePassword(u, pass2)) {
-                            showErrorMessage("Password could't be changed");
+                        try{
+                            appMenu.client.changePassword(email,pass2);
+                            panel.showErrorMessage("Password changed successfully");
+                            dialog.dispose();
+                        }catch (IOException | InterruptedException ex){
+                            ex.printStackTrace();
+                            panel.showErrorMessage("Error changing the password: "+ex.getMessage());
                         }
-                        dialog.dispose();*/
-                        panel.showErrorMessage("Password validated");
                     }else {
                         panel.showErrorMessage("Password must contain 1 number and minimum 8 characters");
                     }
@@ -274,8 +275,16 @@ public class UserLogIn extends JPanel implements ActionListener{
         if(!email.isBlank() && !password.isBlank()) {
 
             try {
-                appMain.client.login(email, password);
-                return true;
+                AppData appdata = appMenu.client.login(email, password);
+                System.out.println(appdata);
+                if(appdata.getPatient() != null && appdata.getUser() != null) {
+                    appMenu.patient = appdata.getPatient();
+                    appMenu.user = appdata.getUser();
+                    return true;
+                }else{
+                    showErrorMessage("Error retrieving Patient and User data");
+                    return false;
+                }
             } catch (IOException | InterruptedException | LogInError e) {
                 showErrorMessage(e.getMessage());
                 return false;
@@ -298,7 +307,6 @@ public class UserLogIn extends JPanel implements ActionListener{
     public Boolean canChangePassword() {
         String email = emailTxFLogIn.getText();
         if(email != null && !email.isBlank()){
-            //TODO: send requets to server
             Boolean isUser = true; //appMenu.jpaUserMan.isUser(email);
             if(isUser) {
                 return true;
@@ -336,7 +344,7 @@ public class UserLogIn extends JPanel implements ActionListener{
                 return false;
             }
         }else {
-            showErrorMessage("Password's minimum lenght is of 8 characters");
+            showErrorMessage("Password's minimum length is of 8 characters");
             return false;
         }
         return true;
