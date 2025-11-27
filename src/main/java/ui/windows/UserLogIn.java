@@ -307,7 +307,6 @@ public class UserLogIn extends JPanel implements ActionListener{
     public Boolean canChangePassword() {
         String email = emailTxFLogIn.getText();
         if(email != null && !email.isBlank()){
-            //TODO: send requets to server
             Boolean isUser = true; //appMenu.jpaUserMan.isUser(email);
             if(isUser) {
                 return true;
@@ -345,7 +344,7 @@ public class UserLogIn extends JPanel implements ActionListener{
                 return false;
             }
         }else {
-            showErrorMessage("Password's minimum lenght is of 8 characters");
+            showErrorMessage("Password's minimum length is of 8 characters");
             return false;
         }
         return true;

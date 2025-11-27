@@ -263,7 +263,6 @@ public class Client {
             System.out.println("User ID: " + id + ", Role: " + role);
 
             User user = new User(id, email, password, role);
-            //appMain.user = user; //TODO; eliminar
             appData.setUser(user);
 
             //Request doctor data
@@ -430,7 +429,7 @@ public class Client {
         JsonObject response;
         do {
             response = responseQueue.take();
-        } while (!response.get("type").getAsString().equals("CHANGE_PASSWORD_RESPONSE"));
+        } while (!response.get("type").getAsString().equals("CHANGE_PASSWORD_REQUEST_RESPONSE"));
 
         // Check response
         String status = response.get("status").getAsString();
