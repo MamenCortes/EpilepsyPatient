@@ -11,15 +11,15 @@ public class AreYouOkayPopup {
 
         SwingUtilities.invokeLater(() -> {
 
-            JDialog dialog = new JDialog((Frame) null, "¿Estás bien?", true);
+            JDialog dialog = new JDialog((Frame) null, "¿R U OK?", true);
             dialog.setSize(300, 150);
             dialog.setLayout(new BorderLayout());
             dialog.setLocationRelativeTo(null);
 
-            JLabel label = new JLabel("¿Te encuentras bien?", SwingConstants.CENTER);
+            JLabel label = new JLabel("¿Are you feeling fine", SwingConstants.CENTER);
             dialog.add(label, BorderLayout.CENTER);
 
-            JButton yesButton = new JButton("Sí");
+            JButton yesButton = new JButton("YES");
             yesButton.addActionListener(e -> {
                 onYes.run();
                 dialog.dispose();

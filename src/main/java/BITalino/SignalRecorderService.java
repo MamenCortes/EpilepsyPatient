@@ -63,7 +63,7 @@ public class SignalRecorderService {
     public void startRecording() {
         try {
 
-            int[] channelsToRead = {1,2}; // ECG en A2 y Acelerómetro en A1
+            int[] channelsToRead = {1,4}; // ECG en A2 y Acelerómetro en A1
             bitalino.start(channelsToRead);
 
             isRecording = true;
@@ -79,7 +79,6 @@ public class SignalRecorderService {
             System.out.println("🎯 Hilos en ejecución (Read / Analyze / Save)");
 
         } catch (Throwable e) {
-            //excepcion lanzar mensaje a la UI
             e.printStackTrace();
         }
     }
@@ -107,15 +106,6 @@ public class SignalRecorderService {
 
     public File getZipFile() {
         return zipFile;
-    }
-
-    public Signal buildSignalForPatient() {
-        if (zipFile == null) {
-            throw new IllegalStateException("zipFile is null. Did you call stopRecording() and compressToZip()?");
-        }
-        LocalDateTime now = LocalDateTime.now();
-        int timeStamp = 0; // Placeholder for timestamp
-        return new Signal(String.valueOf(now), fs, zipFile, String.valueOf(timeStamp));
     }
 
     public boolean isRecordingInterrupted() {
@@ -153,6 +143,7 @@ public class SignalRecorderService {
                     handleBitalinoDisconnection();
                 } catch (BITalinoException ex) {
                     throw new RuntimeException(ex);
+                    //TODO avisar al controller para que haga el ui correspondiente
                 }
             }
 
@@ -162,23 +153,30 @@ public class SignalRecorderService {
 
     private void handleBitalinoDisconnection() throws BITalinoException {
         isRecording = false;
+
         try {
             if (bitalino != null) {
                 bitalino.stop();
                 bitalino.close();
             }
-        }catch (Exception ignored) {}
+        } catch (Exception e) {
+            throw new BITalinoException(BITalinoErrorTypes.BT_DEVICE_NOT_CONNECTED);
+        }
 
         try {
-                saveThread.join(); // esperar a que guarde todo lo que ya tenía
-                zipFile = compressToZip(csvTempFile);
-                System.out.println("📦 Partial ZIP created: " + zipFile.getAbsolutePath());
+            saveThread.join(); // esperar a que guarde todo lo que ya tenía
+            zipFile = compressToZip(csvTempFile);
+            System.out.println("📦 Partial ZIP created: " + zipFile.getAbsolutePath());
+        } catch (Exception e) {
+            throw new BITalinoException(BITalinoErrorTypes.LOST_COMMUNICATION);
+        }
 
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        recordingInterrupted= true;
+        recordingInterrupted = true;
+
+        // Lanzar una excepción final indicando desconexión
+        throw new BITalinoException(BITalinoErrorTypes.LOST_COMMUNICATION);
     }
+
 
 
     private class AnalyzeThread implements Runnable {
@@ -219,8 +217,8 @@ public class SignalRecorderService {
 
     private boolean analyzeSignals(Frame f) {
         boolean anomaly =false;
-        double ecg = f.analog[1]; // ECG en A2
-        double acc= f.analog[0]; // Acelerómetro en A1
+        double ecg = f.analog[0]; // ECG en A2
+        double acc= f.analog[1]; // Acelerómetro en A6
         System.out.println(Arrays.toString(f.analog));
 
         anomaly=analyzer.addSample(ecg);
@@ -287,29 +285,6 @@ public class SignalRecorderService {
             return null;
         }
     }
-    public static String zipToBase64(File zipFile) throws Exception {
-        byte[] bytes = Files.readAllBytes(zipFile.toPath());
-        return Base64.getEncoder().encodeToString(bytes);
-    }
-
-    public String buildUploadSignalJson(File zipFile, int patientId, int samplingRate) throws Exception {
- // todo los q hagan falta para la base de datos separar metadata de la señal y el user id
-        UploadSignalRequest req = new UploadSignalRequest();
-
-        // --- Metadata ---
-        req.metadata = new UploadSignalRequest.Metadata();
-        req.metadata.patient_id = patientId;
-        req.metadata.sampling_rate = samplingRate;
-        req.metadata.timestamp = LocalDateTime.now().toString();
-
-        // --- ZIP contenido ---
-        req.filename = zipFile.getName();
-        req.data = zipToBase64(zipFile);
-
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        return gson.toJson(req);
-    }
-
 
     @Test
     public void testSaveThreadCreatesCSV() throws Exception {
@@ -359,21 +334,7 @@ public class SignalRecorderService {
         System.out.println(zip.getAbsolutePath());
 
     }
-    public class UploadSignalRequest {
-        public String type = "UPLOAD_SIGNAL";
-        public Metadata metadata;
-        public String compression = "zip-base64";
-        public String filename;
-        public String data; // ZIP en base64
 
-        public static class Metadata {
-            public int patient_id;
-            public int sampling_rate;
-            public int duration_seconds;
-            public String[] channels;
-            public String timestamp;
-        }
-    }
 
 }
 

@@ -4,6 +4,8 @@ import pojos.Patient;
 import ui.components.AreYouOkayPopup;
 import ui.windows.Application;
 
+import javax.swing.*;
+
 public class RecordingController {
 
     private final AlarmManager alarmManager;
@@ -48,4 +50,15 @@ public class RecordingController {
             }
         });
     }
+    public void onRecordingError(String message) {
+        System.out.println("❌ Recording error: " + message);
+
+
+        // 2. Notificar a la UI (sin bloquear hilos)
+        SwingUtilities.invokeLater(() -> {
+            appMain.showErrorMessage("Recording interrupted:\n" + message);
+
+        });
+    }
+
 }
