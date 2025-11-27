@@ -275,13 +275,11 @@ public class UserLogIn extends JPanel implements ActionListener{
         if(!email.isBlank() && !password.isBlank()) {
 
             try {
-                appMenu.client.login(email, password);
-                return true;
-                AppData appdata = appMain.client.login(email, password);
+                AppData appdata = appMenu.client.login(email, password);
                 System.out.println(appdata);
                 if(appdata.getPatient() != null && appdata.getUser() != null) {
-                    appMain.patient = appdata.getPatient();
-                    appMain.user = appdata.getUser();
+                    appMenu.patient = appdata.getPatient();
+                    appMenu.user = appdata.getUser();
                     return true;
                 }else{
                     showErrorMessage("Error retrieving Patient and User data");
