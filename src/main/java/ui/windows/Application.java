@@ -207,7 +207,7 @@ public class Application extends JFrame {
      * Initializes frame title, icon, default close behavior, and window listeners.
      */
     public void initComponents() {
-        setTitle("Application");
+        setTitle("Patient Application");
         setLayout(null);
         setLocationRelativeTo(null);
         setIconImage(new ImageIcon(getClass().getResource("/icons/night_guardian_mini_500.png")).getImage());

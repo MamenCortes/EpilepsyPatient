@@ -54,11 +54,13 @@ public class RecordingController {
         System.out.println("❌ Recording error: " + message);
 
 
+        //TODO: estaba dando error
+
         // 2. Notificar a la UI (sin bloquear hilos)
-        SwingUtilities.invokeLater(() -> {
+        /*SwingUtilities.invokeLater(() -> {
             appMain.showErrorMessage("Recording interrupted:\n" + message);
 
-        });
+        });*/
     }
 
 }
