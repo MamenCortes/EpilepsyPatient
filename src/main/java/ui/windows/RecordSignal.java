@@ -1,11 +1,11 @@
 package ui.windows;
 
-import BITalino.BITalinoException;
+import SignalRecording.RecordingException;
 import Events.BITalinoDisconnectedEvent;
 import Events.UIEventBus;
 import com.google.common.eventbus.Subscribe;
 import net.miginfocom.swing.MigLayout;
-import BITalino.SignalRecorderService;
+import SignalRecording.SignalRecorderService;
 import ui.components.MyButton;
 import ui.components.MyTextField;
 
@@ -265,7 +265,11 @@ public class RecordSignal extends JPanel implements ActionListener {
             System.out.println(macAdd);
             //cambiar a conneted and start recording panel
             recorderService = new SignalRecorderService(macAdd);
-            recorderService.bitalinoConnect();
+            try {
+                recorderService.bitalinoConnect();
+            } catch (RecordingException ex) {
+                showFeedbackMessage(errorMessage, ex.getError().getFullMessage());
+            }
             if (recorderService.isConnected()) {
                 cardLayout.show(cardPanel, "Panel2");
             } else {
@@ -281,7 +285,11 @@ public class RecordSignal extends JPanel implements ActionListener {
             if (!recorderService.isConnected()) {
                 System.out.println("Reconnecting to BITalino...");
                 showFeedbackMessage(errorMessage2, "Reconnecting...");
-                recorderService.bitalinoConnect();
+                try {
+                    recorderService.bitalinoConnect();
+                } catch (RecordingException ex) {
+                    showFeedbackMessage(errorMessage, ex.getError().getFullMessage());
+                }
                 if (!recorderService.isConnected()) {
                     System.out.println("Reconnection failed.");
                     showFeedbackMessageDelayed(errorMessage2, "Reconnection failed please try again ", 1500);
@@ -290,10 +298,9 @@ public class RecordSignal extends JPanel implements ActionListener {
             }
             try {
                 recorderService.startRecording();
-            } catch (BITalinoException ex) {
-                showFeedbackMessage(errorMessage, "Error starting acquisition: device not connected.");
-                ex.printStackTrace();
-                return; // 🚨 IMPORTANTÍSIMO: no seguir a la parte de UI
+            } catch ( RecordingException ex) {
+                showFeedbackMessage(errorMessage2, ex.getError().getFullMessage());
+                return;
             }
             if(!recording){
                 image.setIcon(recordingGif);
@@ -311,8 +318,8 @@ public class RecordSignal extends JPanel implements ActionListener {
                     showFeedbackMessage(errorMessage2, "Saving recording...");
                     try {
                         recorderService.stopRecording();
-                    } catch (BITalinoException ex) {
-                        throw new RuntimeException(ex);
+                    } catch (RecordingException ex) {
+                        showFeedbackMessage(errorMessage2, ex.getError().getFullMessage());
                     }
                 }
             }
@@ -366,21 +373,26 @@ public class RecordSignal extends JPanel implements ActionListener {
      */
     private void startSavingProcess() {
         new SwingWorker<Boolean, Void>() {
-            boolean success= false;
             @Override
             protected Boolean doInBackground() {
                 try {
                     File zip = recorderService.getZipFile();
+                    if (zip == null || !zip.exists()) {
+                        // No ZIP available → upload cannot proceed
+                        return false;
+                    }
+
                     int patient_id= appMain.patient.getId();
                     int sampling_rate= recorderService.getFs();
                     LocalDateTime timestamp= LocalDateTime.now();
                     String filename= zip.getName();
+
                     byte[] zipBytes = Files.readAllBytes(zip.toPath());
                     String base64Zip = Base64.getEncoder().encodeToString(zipBytes);
-                    System.out.println("Uploading zip file to server...");
+
                     return appMain.client.sendJsonToServer(patient_id, sampling_rate, timestamp, filename, base64Zip);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    // If anything fails during encoding or sending
                     return false;
                 }
             }
@@ -400,7 +412,6 @@ public class RecordSignal extends JPanel implements ActionListener {
                         askRetry();
                     }
                 } catch (Exception ex) {
-                    ex.printStackTrace();
                     askRetry();
                 }
             }

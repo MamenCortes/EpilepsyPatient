@@ -1,5 +1,5 @@
 package ui.windows;
-import BITalino.DetectionManager;
+import SignalRecording.DetectionManager;
 import Events.*;
 import com.google.common.eventbus.Subscribe;
 import net.miginfocom.swing.MigLayout;

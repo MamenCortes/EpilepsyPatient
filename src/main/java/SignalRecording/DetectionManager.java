@@ -1,4 +1,4 @@
-package BITalino;
+package SignalRecording;
 
 import Events.AlertMessageEvent;
 import Events.ShowHelpDialogEvent;
