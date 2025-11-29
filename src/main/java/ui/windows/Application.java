@@ -153,11 +153,11 @@ public class Application extends JFrame {
             showMessageDialog(this, alert);
         });
     }
-@Subscribe
-public void onAllertConfirmed(AlertMessageEvent event) {
-    String alert=client.sendAlertToAdmin();
-    showMessageDialog(this, alert);
-}
+    @Subscribe
+    public void onAllertConfirmed(AlertMessageEvent event) {
+        String alert=client.sendAlertToAdmin();
+        showMessageDialog(this, alert);
+    }
     /**
      * Called automatically when the connection to the server is lost.
      * Shows an error message and prompts the user to enter a new IP.
@@ -226,12 +226,7 @@ public void onAllertConfirmed(AlertMessageEvent event) {
         dialog.setVisible(true);
     }
 
-    @Subscribe
-    public void onBitalinoDisconnected(BITalinoDisconnectedEvent event) {
-        SwingUtilities.invokeLater(() -> {
-            showMessageDialog(this, "The connection with the BITalino device was interrupted.");
-        });
-    }
+
 
     /**
      * Initializes frame title, icon, default close behavior, and window listeners.
@@ -369,7 +364,7 @@ public void onAllertConfirmed(AlertMessageEvent event) {
         UIEventBus.BUS.unregister(this);
         System.exit(0);
     }
-    public void startOneMinuteTimer(Runnable onTimeout) {
+    private void startOneMinuteTimer(Runnable onTimeout) {
 
         // Cancelar temporizador anterior si existe
         if (pendingAlarm != null && !pendingAlarm.isDone()) {

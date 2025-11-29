@@ -23,34 +23,37 @@ import static org.junit.Assert.*;
 
 public class SignalRecorderService {
 
-    private static  String MAC_ADDRESS ;
+    private static String MAC_ADDRESS;
 
     private BITalino bitalino;
-    private boolean isRecording = false;
-    private boolean connected=false;
+    private volatile boolean isRecording = false;
+    private volatile boolean connected = false;
+    private volatile boolean recordingInterrupted = false;
+
+    private final int fs=100; // sampling frequency
+    private Thread readThread;
+    private Thread analyzeThread;
+    private Thread saveThread;
+
     private File csvTempFile;
     private File zipFile;
-    //private RecordingController controller;
-    private volatile boolean recordingInterrupted = false;
-    private Thread saveThread;
-    private final int fs = 100; // Sampling frequency
+
+    // Colas para comunicación entre hilos
     private final BlockingQueue<Frame> frameQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<Frame> saveQueue = new LinkedBlockingQueue<>();
 
-    //TODO: eliminar si se decide no implementar así
-    private EcgProcessor ecgProcessor = new EcgProcessor();
-    private AccProcessor accProcessor = new AccProcessor();
-    private DetectionManager detectionManager = new DetectionManager();
+    // Poison pill para indicar fin de datos a Analyze y Save
+    private static final Frame POISON_PILL = new Frame();
+
+    // Procesadores de señal y detector de eventos
+    private final EcgProcessor ecgProcessor=new EcgProcessor();
+    private final AccProcessor accProcessor=new AccProcessor();
+    private final DetectionManager detectionManager=new DetectionManager();
 
 
     public SignalRecorderService(String MAC_ADDRESS) {
         SignalRecorderService.MAC_ADDRESS = MAC_ADDRESS;
     }
-
-   /* public void setRecordingContoller (RecordingController controller) {
-        this.controller = controller;
-
-    }*/
     public int getFs() {
         return fs;
     }
@@ -63,20 +66,22 @@ public class SignalRecorderService {
             System.out.println("✅ Conexión establecida.");
         } catch (Exception e) {
             System.out.println("❌ Error al conectar con BITalino en " + MAC_ADDRESS);
-            e.printStackTrace();
         }
     }
 
-    public void startRecording() {
+    public void startRecording() throws BITalinoException {
         try {
-
+            if (!connected || bitalino == null) {
+                throw new BITalinoException(BITalinoErrorTypes.BT_DEVICE_NOT_CONNECTED);
+            }
             int[] channelsToRead = {1,4}; // ECG en A2 y Acelerómetro en A1
             bitalino.start(channelsToRead);
 
             isRecording = true;
+            recordingInterrupted = false;
 
-            Thread readThread = new Thread(new ReadThread());
-            Thread analyzeThread = new Thread(new AnalyzeThread());
+            readThread = new Thread(new ReadThread());
+            analyzeThread = new Thread(new AnalyzeThread());
             saveThread = new Thread(new SaveThread());
 
             readThread.start();
@@ -87,45 +92,74 @@ public class SignalRecorderService {
 
         } catch (Throwable e) {
             e.printStackTrace();
+            throw new BITalinoException(BITalinoErrorTypes.LOST_COMMUNICATION);
+
         }
     }
 
-    public void stopRecording() {
+    public void stopRecording()throws BITalinoException {
+        if (!isRecording && !recordingInterrupted) {
+            System.out.println("⚠ stopRecording() llamado pero ya no se estaba grabando.");
+            return;
+        }
+        // Si ya se había interrumpido por desconexión, no vuelvas a hacer nada gordo
+        if (recordingInterrupted) {
+            System.out.println("⚠ stopRecording() llamado tras desconexión. No se hace nada.");
+            return;
+        }
+
         isRecording = false;
         System.out.println("🛑 Deteniendo adquisición...");
 
+        try {frameQueue.put(POISON_PILL);} catch (InterruptedException ignored) {}
+        try {saveQueue.put(POISON_PILL);} catch (InterruptedException ignored) {}
+
+        // Cerrar BITalino si sigue vivo
         try {
-            if (bitalino != null) {
+            if (connected && bitalino != null) {
                 bitalino.stop();
                 bitalino.close();
             }
         } catch (Exception e) { e.printStackTrace(); }
+        finally { connected = false; }
 
         try {
-            System.out.println("⏳ Esperando a que termine SaveThread...");
-            saveThread.join();
-        } catch (InterruptedException e) { e.printStackTrace(); }
-
-
-        zipFile = compressToZip(csvTempFile);
-        System.out.println("📦 ZIP creado en: " + zipFile.getAbsolutePath());
+            if (readThread != null) {
+                System.out.println("⏳ Esperando a que termine ReadThread...");
+                readThread.join();
+            }
+            if (analyzeThread != null) {
+                System.out.println( "⏳ Esperando a que termine AnalyzeThread...");
+                analyzeThread.join();
+            }
+            if (saveThread != null) {
+                System.out.println("⏳ Esperando a que termine SaveThread...");
+                saveThread.join();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (csvTempFile != null && csvTempFile.exists()) {
+            zipFile = compressToZip(csvTempFile);
+            if (zipFile != null) {
+                System.out.println("📦 ZIP creado en: " + zipFile.getAbsolutePath());
+            } else {
+                System.out.println("⚠ No se pudo crear el ZIP.");
+            }
+        } else {
+            System.out.println("⚠ No hay CSV para comprimir.");
+        }
+        UIEventBus.BUS.post(new BITalinoDisconnectedEvent());
+        System.out.println("Recording stopped");
     }
 
     public File getZipFile() {
         return zipFile;
     }
-
-    public boolean isRecordingInterrupted() {
-        return recordingInterrupted;
-    }
-
-    public boolean isRecording() {
-        return isRecording;
-    }
-
     public boolean isConnected() {
         return connected;
     }
+
 
     // ------------------------ THREADS ------------------------
 
@@ -137,22 +171,29 @@ public class SignalRecorderService {
                 while (isRecording) {
                     Frame[] frames = bitalino.read(10);
                     if (frames == null) continue;
-
                     for (Frame f : frames) {
-                        if (f != null && f.analog != null) {
-                            frameQueue.put(f);
-                            saveQueue.put(f);
-                        }
+                        frameQueue.put(f);
+                        saveQueue.put(f);
                     }
                 }
-            } catch (Exception e) {   System.out.println("❌ BITalino disconnected unexpectedly!");
-                try {
-                    handleBitalinoDisconnection();
-                } catch (BITalinoException ex) {
-                    UIEventBus.BUS.post(new BITalinoDisconnectedEvent());
-                    throw new RuntimeException(ex);
-                    //TODO avisar al controller para que haga el ui correspondiente
+            } catch (BITalinoException | InterruptedException e) {
+                if (isRecording) {
+                    stopAfterDisconnection();
+                    System.out.println("❌ BITalinoException en ReadThread: " + e.getMessage());
+                    recordingInterrupted = true;
+                    isRecording = false;
+                    connected = false;
 
+                    // Enviar poison pill para que Analyze y Save terminen
+                    try {
+                        frameQueue.put(POISON_PILL);
+                    } catch (InterruptedException ignored) {}
+                    try {
+                        saveQueue.put(POISON_PILL);
+                    } catch (InterruptedException ignored) {}
+
+                } else {
+                    System.out.println("🔴 [ReadThread] BITalinoException tras parar la grabación.");
                 }
             }
 
@@ -160,44 +201,64 @@ public class SignalRecorderService {
         }
     }
 
-    private void handleBitalinoDisconnection() throws BITalinoException {
-        isRecording = false;
 
+    private void stopAfterDisconnection() {
+        System.out.println("🛑 Parada por desconexión de BITalino...");
+
+        isRecording = false;
+        recordingInterrupted = true;
+        connected = false;
+
+        // Enviar poison pill para que terminen Analyze y Save
+        try { frameQueue.put(POISON_PILL); } catch (InterruptedException ignored) {}
+        try { saveQueue.put(POISON_PILL); } catch (InterruptedException ignored) {}
+
+        // Intentar cerrar BITalino, pero si ya está muerto, no pasa nada
         try {
             if (bitalino != null) {
                 bitalino.stop();
                 bitalino.close();
             }
         } catch (Exception e) {
-            throw new BITalinoException(BITalinoErrorTypes.BT_DEVICE_NOT_CONNECTED);
+            System.out.println("⚠ Error cerrando BITalino tras desconexión (ya estaría muerto): " + e.getMessage());
         }
 
+        // Esperar SOLO a Analyze y Save (NO a Read, que es este hilo)
         try {
-            saveThread.join(); // esperar a que guarde todo lo que ya tenía
-            zipFile = compressToZip(csvTempFile);
-            System.out.println("📦 Partial ZIP created: " + zipFile.getAbsolutePath());
-        } catch (Exception e) {
-            throw new BITalinoException(BITalinoErrorTypes.LOST_COMMUNICATION);
+            if (analyzeThread != null) analyzeThread.join();
+            if (saveThread != null)    saveThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
-        recordingInterrupted = true;
+        // Crear ZIP con lo que haya
+        if (csvTempFile != null && csvTempFile.exists()) {
+            zipFile = compressToZip(csvTempFile);
+            if (zipFile != null) {
+                System.out.println("📦 ZIP parcial creado tras desconexión: " + zipFile.getAbsolutePath());
+                UIEventBus.BUS.post(new BITalinoDisconnectedEvent());
 
-        // Lanzar una excepción final indicando desconexión
-        throw new BITalinoException(BITalinoErrorTypes.LOST_COMMUNICATION);
+            }
+        } else {
+            System.out.println("⚠ No hay CSV para comprimir tras desconexión.");
+        }
     }
-
-
 
     private class AnalyzeThread implements Runnable {
         @Override
         public void run() {
-            boolean anomaly;
             try {
-                while (isRecording || !frameQueue.isEmpty()) {
+                while (true) {
                     Frame f = frameQueue.take();
+                    if (f == POISON_PILL) {
+                        System.out.println("🟣 [AnalyzeThread] Poison pill recibido. Terminando.");
+                        break;
+                    }
                     analyzeSignals(f);
                 }
-            } catch (Exception e) { e.printStackTrace(); }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             System.out.println("🟣 [AnalyzeThread] Finalizado");
 
@@ -214,7 +275,7 @@ public class SignalRecorderService {
 
         double ecg = f.analog[0]; // ECG en A2
         double acc= f.analog[1];
-
+       // System.out.println("ECG: " + ecg + " | ACC: " + acc);
         ecgProcessor.addSample(ecg, ts);
         accProcessor.addSample(acc, ts);
 
@@ -234,18 +295,23 @@ public class SignalRecorderService {
             try {
                 csvTempFile = File.createTempFile("bitalino_", ".csv");
                 csvTempFile.deleteOnExit();
+                System.out.println("💾 [SaveThread] CSV en: " + csvTempFile.getAbsolutePath());
 
                 try (FileWriter writer = new FileWriter(csvTempFile)) {
-                    while (isRecording || !saveQueue.isEmpty()) {
+                    while (true) {
                         Frame f = saveQueue.take();
+                        if (f == POISON_PILL) {
+                            System.out.println("💾 [SaveThread] Poison pill recibido. Terminando.");
+                            break;
+                        }
 
+                        // ⚠ Ajusta el orden según tus canales
                         writer.write(
-                                f.analog[1] + ";" + // ECG en A2
-                                        f.analog[0] + "\n" // Acelerómetro en A1
+                                f.analog[0] + ";" + // por ejemplo ECG
+                                        (f.analog.length > 1 ? f.analog[1] : 0) + "\n"
                         );
                     }
                 }
-
             } catch (Exception e) { e.printStackTrace(); }
 
             System.out.println("🟦 [SaveThread] Finalizado");

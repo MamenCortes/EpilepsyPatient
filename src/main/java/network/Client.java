@@ -507,7 +507,7 @@ public class Client {
 
             String jsonMessage = gson.toJson(message);
             System.out.println("Sending alert to admin: " + jsonMessage);
-            sendEncrypted(jsonMessage, out, AESkey); // send JSON message
+            sendEncrypted(jsonMessage, out, token); // send JSON message
 
             JsonObject response;
             do {
