@@ -1,6 +1,6 @@
-package SignalRecording;
+package signalRecording;
 
-import BITalino.BITalino;
+import BITalino.*;
 import Events.BITalinoDisconnectedEvent;
 import Events.UIEventBus;
 import org.junit.Test;
@@ -9,6 +9,7 @@ import java.io.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.ZipFile;
+
 
 import static org.junit.Assert.*;
 /**
@@ -175,17 +176,14 @@ public class SignalRecorderService {
      */
     public void stopRecording() throws RecordingException {
         if (!isRecording && !recordingInterrupted) {
-            System.out.println("⚠ stopRecording() called but it was already not recording");
             throw new RecordingException(RecordingErrors.STOPPED_WHEN_NOT_RECORDING);
         }
 
         if (recordingInterrupted) {
-            System.out.println("⚠ stopRecording() called after disconnection.");
             return;
         }
 
         isRecording = false;
-        System.out.println("🛑 Stopping acquisition...");
 
         try {frameQueue.put(POISON_PILL);} catch (InterruptedException ignored) {  throw new RecordingException(RecordingErrors.QUEUE_PUT_ERROR);}
         try {saveQueue.put(POISON_PILL);} catch (InterruptedException ignored) {  throw new RecordingException(RecordingErrors.QUEUE_PUT_ERROR);}
@@ -200,18 +198,10 @@ public class SignalRecorderService {
         finally { connected = false; }
 
         try {
-            if (readThread != null) {
-                System.out.println("⏳ Waiting for ReadThread...");
-                readThread.join();
-            }
-            if (analyzeThread != null) {
-                System.out.println( "⏳ Waiting for AnalyzeThread...");
-                analyzeThread.join();
-            }
-            if (saveThread != null) {
-                System.out.println("⏳ Waiting for SaveThread...");
-                saveThread.join();
-            }
+            if (readThread != null) readThread.join();
+            if (analyzeThread != null) analyzeThread.join();
+            if (saveThread != null) saveThread.join();
+
         } catch (InterruptedException e) {
             throw new RecordingException(RecordingErrors.UNEXPECTED_EXCEPTION);
         }
@@ -221,7 +211,13 @@ public class SignalRecorderService {
         } else {
             throw new RecordingException(RecordingErrors.ZIP_CREATION_FAILED);
         }
-        UIEventBus.BUS.post(new BITalinoDisconnectedEvent());
+        UIEventBus.BUS.post(
+                new BITalinoDisconnectedEvent(
+                        java.time.LocalDateTime.now(),
+                        true,   // final ZIP always exists if we reached here
+                        "Recording successfully completed."
+                )
+        );
     }
     /**
      * Returns the ZIP file generated after stopping the recording.
@@ -305,11 +301,19 @@ public class SignalRecorderService {
             if (analyzeThread != null) analyzeThread.join();
             if (saveThread != null)    saveThread.join();
         } catch (InterruptedException ignored) {}
-
+        boolean partialZipCreated = false;
         // Attempt to generate a partial ZIP with whatever data is available
         if (csvTempFile != null && csvTempFile.exists()) {
             zipFile = compressToZip(csvTempFile);
-            if (zipFile != null) UIEventBus.BUS.post(new BITalinoDisconnectedEvent());
+            if (zipFile != null)  partialZipCreated = true; UIEventBus.BUS.post(
+                    new BITalinoDisconnectedEvent(
+                            java.time.LocalDateTime.now(),
+                            partialZipCreated,
+                            partialZipCreated
+                                    ? "BITalino disconnected unexpectedly. Partial recording available."
+                                    : "BITalino disconnected unexpectedly. No recording data available."
+                    )
+            );
         }
     }
 

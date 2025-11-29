@@ -1,4 +1,4 @@
-package SignalRecording;
+package signalRecording;
 
 public class RecordingException extends Exception {
 

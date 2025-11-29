@@ -1,4 +1,4 @@
-package SignalRecording;
+package signalRecording;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

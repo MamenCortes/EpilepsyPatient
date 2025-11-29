@@ -1,4 +1,4 @@
-package SignalRecording;
+package signalRecording;
 
 import Events.AlertMessageEvent;
 import Events.ShowHelpDialogEvent;

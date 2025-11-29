@@ -1,5 +1,5 @@
 package ui.windows;
-import SignalRecording.DetectionManager;
+import signalRecording.DetectionManager;
 import Events.*;
 import com.google.common.eventbus.Subscribe;
 import net.miginfocom.swing.MigLayout;

@@ -1,7 +1,7 @@
 package BITalino;
 
-import SignalRecording.RecordingException;
-import SignalRecording.SignalRecorderService;
+import signalRecording.RecordingException;
+import signalRecording.SignalRecorderService;
 
 import java.io.File;
 

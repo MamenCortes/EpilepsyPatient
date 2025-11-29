@@ -1,11 +1,11 @@
 package ui.windows;
 
-import SignalRecording.RecordingException;
+import signalRecording.RecordingException;
 import Events.BITalinoDisconnectedEvent;
 import Events.UIEventBus;
 import com.google.common.eventbus.Subscribe;
 import net.miginfocom.swing.MigLayout;
-import SignalRecording.SignalRecorderService;
+import signalRecording.SignalRecorderService;
 import ui.components.MyButton;
 import ui.components.MyTextField;
 
@@ -357,8 +357,17 @@ public class RecordSignal extends JPanel implements ActionListener {
     }
     @Subscribe
     public void onBitalinoDisconnected(BITalinoDisconnectedEvent event) {
-        startSavingProcess();
 
+        // Only attempt upload if a partial recording exists
+        if (event.isPartialRecordingAvailable()) {
+            startSavingProcess();
+        } else {
+            showFeedbackMessage(errorMessage2,
+                    "BITalino disconnected unexpectedly. No recording data available.");
+            buttonsLayout.show(buttonStack, "START");
+            back2MenuBt.setVisible(true);
+            recording = false;
+        }
     }
     /**
      * Starts the asynchronous saving process:

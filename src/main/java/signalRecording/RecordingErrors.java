@@ -1,4 +1,4 @@
-package SignalRecording;
+package signalRecording;
 /**
  * Enumeration of all possible error conditions that can occur inside
  * the SignalRecorderService during BITalino connection, acquisition,
