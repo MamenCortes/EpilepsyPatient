@@ -7,6 +7,7 @@ import pojos.*;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
@@ -72,6 +73,7 @@ public class Client {
                 while (((line = in.readLine()) != null)&&running) {
                     JsonObject request = gson.fromJson(line, JsonObject.class); //transforms the line into a Json Object
 
+
                     String type = request.get("type").getAsString();
                     System.out.println("\n📩 Received message type: " + type);
 
@@ -122,6 +124,31 @@ public class Client {
                                     e.printStackTrace();
                                     stopClient(true);
                                 }
+                                break;
+                            }
+                            case "ENCRYPTED_RESPONSE":{
+                                String encrypted = request.get("message").getAsString();
+                                String signatureBase64 = request.get("signature").getAsString();
+                                //Decrypt with clients private key
+                                String json = RSAUtil.decrypt(encrypted, clientKeyPair.getPrivate());
+                                //Verify signature with server public key
+                                Signature sig = Signature.getInstance("SHA256withRSA");
+                                sig.initVerify(serverPublicKey);
+                                sig.update(json.getBytes());
+
+                                if (!sig.verify(Base64.getDecoder().decode(signatureBase64))) {
+                                    System.err.println("Signature verification failed");
+                                    break;
+                                }
+
+                                JsonObject decrypted = gson.fromJson(json, JsonObject.class);
+
+                                String innerType = decrypted.get("type").getAsString();
+
+                                if (innerType.equals("CHANGE_PASSWORD_REQUEST_RESPONSE")) {
+                                    responseQueue.put(decrypted);
+                                }
+
                                 break;
                             }
                         }
@@ -187,13 +214,39 @@ public class Client {
         out.flush();
 
         System.out.println("📤 ACTIVATION_REQUEST sent to server: " + request);
+        boolean activationSuccess = false;
+        while(true) {
+            JsonObject response = responseQueue.take();
+            String type = response.get("type").getAsString();
 
-        JsonObject response;
-        do{
-            response = responseQueue.take();
-        }while (response.get("type").getAsString().equals("ACTIVATION_RESPONSE"));
-        String status = response.get("status").getAsString();
-        return status.equals("SUCCESS");
+            switch(type){
+                case "SERVER_PUBLIC_KEY": {
+                    try {
+                        String serverPublicKeyEncoded = response.get("data").getAsString();
+                        byte[] keyBytes = Base64.getDecoder().decode(serverPublicKeyEncoded);
+                        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+                        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+                        this.serverPublicKey = keyFactory.generatePublic(keySpec);
+                        System.out.println("Server Public Key stored successfully: " +
+                                Base64.getEncoder().encodeToString(this.serverPublicKey.getEncoded()));
+                    } catch (Exception e) {
+                        System.out.println("Failed to process SERVER_PUBLIC_KEY: " + e.getMessage());
+                        stopClient(true);
+                        return false;
+                    }
+                    break;
+                }
+
+                case "ACTIVATION_REQUEST_RESPONSE": {
+                    String status = response.get("status").getAsString();
+                    activationSuccess = status.equals("SUCCESS");
+                    return activationSuccess;
+                }
+                default:
+                    System.out.println("Unhandled response type: "+type);
+                    break;
+            }
+        }
     }
     public void sendTokenRequest(String email){
         JsonObject tokenRequest = new JsonObject();
@@ -289,7 +342,6 @@ public class Client {
     public AppData login(String email, String password) throws IOException, InterruptedException, LogInError {
         //String message = "LOGIN;" + email + ";" + password;
         String fileEmail = email.replaceAll("[@.]", "_");
-        //TODO: store public and private key
         PrivateKey privateKey =RSAKeyManager.retrievePrivateKey(fileEmail);
         System.out.println("This is the client's private key: "+Base64.getEncoder().encodeToString(privateKey.getEncoded()));
         PublicKey publicKey = RSAKeyManager.retrievePublicKey(fileEmail);
@@ -310,7 +362,6 @@ public class Client {
         message.put("data", data); //JSON-like map
 
         String jsonMessage = gson.toJson(message);
-        //TODO: ENCRYPTED
         System.out.println("\nBefore encryption, LOGIN_REQUEST to Server: "+jsonMessage);
         sendEncrypted(jsonMessage, out, token); // send JSON message
 
@@ -344,7 +395,6 @@ public class Client {
 
             jsonMessage = gson.toJson(message);
             System.out.println("\nBefore encryption, REQUEST_PATIENT_BY_EMAIL to Server: "+jsonMessage);
-            //TODO: ENCRYPTED
             sendEncrypted(jsonMessage, out, token);
             //out.println(jsonMessage); // send JSON message
 
@@ -360,7 +410,6 @@ public class Client {
 
             Patient patient = Patient.fromJason(response.getAsJsonObject("patient"));
             System.out.println(patient);
-            //appMain.patient = patient; //TODO: eliminar
             appData.setPatient(patient);
             return appData;
         } else {
@@ -482,7 +531,7 @@ public class Client {
         }
     }
 
-    public void changePassword(String email, String newPassword) throws IOException, InterruptedException {
+    public void changePassword(String email, String newPassword) throws Exception {
         Map<String, Object> data = new HashMap<>();
         data.put("email", email);
         data.put("new_password", newPassword);
@@ -492,7 +541,27 @@ public class Client {
         message.put("data", data);
 
         String jsonMessage = gson.toJson(message);
-        sendEncrypted(jsonMessage, out, token);
+
+        String fileEmail = email.replaceAll("[@.]", "_");
+        PrivateKey privateKey =RSAKeyManager.retrievePrivateKey(fileEmail);
+        PublicKey publicKey = RSAKeyManager.retrievePublicKey(fileEmail);
+        this.clientKeyPair = new KeyPair(publicKey,privateKey);
+        Signature signature = Signature.getInstance("SHA256withRSA");
+        signature.initSign(privateKey);
+        signature.update(jsonMessage.getBytes(StandardCharsets.UTF_8));
+        byte[] signatureBytes = signature.sign();
+        String signatureBase64 = Base64.getEncoder().encodeToString(signatureBytes);
+
+        String encryptedMessage = RSAUtil.encrypt(jsonMessage, serverPublicKey);
+        JsonObject wrapper = new JsonObject();
+        wrapper.addProperty("type", "ENCRYPTED_MESSAGE");
+        wrapper.addProperty("message", encryptedMessage);
+        wrapper.addProperty("signature", signatureBase64);
+        wrapper.addProperty("clientEmail", email);
+
+        out.println(gson.toJson(wrapper));
+        out.flush();
+        //sendEncrypted(jsonMessage, out, token);
 
         //Waits for a response of type CHANGE_PASSWORD_RESPONSE
         JsonObject response;
