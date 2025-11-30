@@ -1,6 +1,7 @@
 package ui.windows;
 
 import Events.CloseAppEvent;
+import pojos.Signal;
 import signalRecording.RecordingException;
 import Events.BITalinoDisconnectedEvent;
 import Events.UIEventBus;
@@ -433,6 +434,7 @@ public class RecordSignal extends JPanel implements ActionListener {
      * This work is done inside a SwingWorker to avoid blocking the UI thread.
      */
     private void startSavingProcess() {
+        Signal signal = new Signal();
         new SwingWorker<Boolean, Void>() {
             @Override
             protected Boolean doInBackground() {
@@ -452,6 +454,9 @@ public class RecordSignal extends JPanel implements ActionListener {
                     byte[] zipBytes = Files.readAllBytes(zip.toPath());
                     String base64Zip = Base64.getEncoder().encodeToString(zipBytes);
 
+                    signal.setDate(timestamp.toLocalDate().toString());
+                    signal.setSamplingFrequency(sampling_rate);
+                    signal.setRawSignal(zip);
                     return appMain.client.sendSignalToServer(patient_id, sampling_rate, timestamp, filename, base64Zip);
                 } catch (Exception e) {
                     // If anything fails during encoding or sending
@@ -465,6 +470,7 @@ public class RecordSignal extends JPanel implements ActionListener {
                     boolean success = get();
 
                     if (success) {
+                        appMain.patient.addReport(signal);
                         image.setIcon(uploadedImg);
                         showFeedbackMessage(errorMessage2, "Signal saved successfully.");
                         back2MenuBt.setVisible(true);
