@@ -20,6 +20,16 @@ import encryption.*;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+/**
+ * Handles the communication between the client application and the remote server.
+ * <p>
+ * This class manages TCP connections, encryption (RSA + AES), authentication,
+ * messaging, and asynchronous reception of data through a listening thread.
+ * It also stores cryptographic keys, manages a queue of responses, and provides
+ * high-level methods for login, uploading signals, changing password, retrieving
+ * doctors, and more.
+ * </p>
+ */
 public class Client {
     Socket socket;
     PrintWriter out;
@@ -37,9 +47,21 @@ public class Client {
     private SecretKey token;
     private final CountDownLatch tokenReady = new CountDownLatch(1);
 
+    /**
+     * Creates a new Client instance without establishing a connection.
+     */
     public Client(){
     }
 
+    /**
+     * Connects to the server using the given IP and port.
+     * Initializes I/O streams, sends introductory messages,
+     * and starts the listener thread.
+     *
+     * @param ip   server IP address
+     * @param port server port
+     * @return true if the connection was successful, false otherwise
+     */
     public Boolean connect(String ip, int port) {
 
         try {
@@ -59,11 +81,29 @@ public class Client {
         }
     }
 
+    /**
+     * Creates a TCP socket. This method is protected so it can be overridden in tests.
+     *
+     * @param ip   server IP
+     * @param port server port
+     * @return a connected Socket
+     * @throws IOException if the connection fails
+     */
     protected Socket createSocket(String ip, int port) throws IOException {
         return new Socket(ip, port);
     }
-    /// Start a thread that listens for messages from the server
-    /// If the server sends STOP_CLIENT, the connection is closed and also the app???
+    /**
+     * Starts a background listener thread that waits for messages from the server.
+     * <p>
+     * This thread handles:
+     * <ul>
+     *     <li>Reception of encrypted and unencrypted messages</li>
+     *     <li>Token exchange and key verification</li>
+     *     <li>Stopping the client when instructed</li>
+     *     <li>Routing messages into a blocking queue</li>
+     * </ul>
+     * </p>
+     */
     public void startListener() {
         System.out.println("Listening for messages...");
         Thread listener = new Thread(() -> {
@@ -168,11 +208,24 @@ public class Client {
         //listener.setDaemon(true); // client ends even if thread is running
         listener.start();
     }
-
+    /**
+     * Sets the RSA KeyPair for the client used to decrypt messages
+     * and to verify server authenticity.
+     *
+     * @param keyPair the RSA key pair
+     */
     public void setClientKeyPair (KeyPair keyPair){
         this.clientKeyPair = keyPair;
     }
-
+    /**
+     * Sends an activation request to the server and waits for a response.
+     *
+     * @param email          the email to activate
+     * @param temporaryPass  the temporary password
+     * @param oneTimeToken   the single-use activation token
+     * @return true if activation succeeded, false otherwise
+     * @throws InterruptedException if waiting for a response is interrupted
+     */
     public boolean sendActivationRequest (String email, String temporaryPass, String oneTimeToken) throws InterruptedException {
         Map<String, Object> data = new HashMap<>();
         data.put("email", email);
@@ -198,6 +251,11 @@ public class Client {
         String status = response.get("status").getAsString();
         return status.equals("SUCCESS");
     }
+    /**
+     * Sends a token request message, providing the user email.
+     *
+     * @param email the user email
+     */
     public void sendTokenRequest(String email){
         JsonObject tokenRequest = new JsonObject();
         tokenRequest.addProperty("type", "TOKEN_REQUEST");
@@ -207,7 +265,12 @@ public class Client {
 
         System.out.println("TOKEN_REQUEST sent to the Server");
     }
-
+    /**
+     * Sends the client's public RSA key to the server for encryption initialization.
+     *
+     * @param publicKey the public RSA key
+     * @param email     the associated email
+     */
     public void sendPublicKey(PublicKey publicKey, String email) {
         String clientPublicKey = Base64.getEncoder().encodeToString(publicKey.getEncoded());
         JsonObject data = new JsonObject();
@@ -222,7 +285,11 @@ public class Client {
 
         System.out.println("Sent Client's Public Key to Server");
     }
-
+    /**
+     * Checks whether the socket is connected to the server.
+     *
+     * @return true if connected, false otherwise
+     */
     public Boolean isConnected(){
         if(socket == null){
             return false;
@@ -242,8 +309,14 @@ public class Client {
     }
 
     /**
+     * Stops the client gracefully.
+     * <ul>
+     *     <li>If initiated by client: sends an encrypted STOP_CLIENT message</li>
+     *     <li>Releases network resources</li>
+     *     <li>Notifies the UI if server initiated the disconnection</li>
+     * </ul>
      *
-     * @param initiatedByClient
+     * @param initiatedByClient true if the client requests shutdown
      */
     public void stopClient(boolean initiatedByClient) {
         if (initiatedByClient && socket != null && !socket.isClosed()) {
@@ -253,8 +326,6 @@ public class Client {
             String jsonMessage = gson.toJson(message);
             System.out.println("\nBefore encryption, STOP_CLIENT to Server: "+jsonMessage);
             sendEncrypted(jsonMessage, out, token);
-            // TODO: ENCRYPTED
-            //out.println(jsonMessage);
             System.out.println("Sent (client-initiated): " + jsonMessage);
         }
 
@@ -264,7 +335,6 @@ public class Client {
         // Notify UI ONLY if the server disconnected
         if (!initiatedByClient) {
             UIEventBus.BUS.post(new ServerDisconnectedEvent());
-            //appMain.onServerDisconnected();
         }
 
         releaseResources(out, in, socket);
@@ -371,8 +441,16 @@ public class Client {
         }
     }
 
-
-
+    /**
+     * Retrieves doctor information associated to a patient.
+     *
+     * @param doctor_id  the doctor's ID
+     * @param patient_id the patient's ID
+     * @param user_id    the user requesting information
+     * @return a Doctor object or null if not found
+     * @throws IOException           communication error
+     * @throws InterruptedException  waiting interruption
+     */
     public Doctor getDoctorFromPatient(int doctor_id, int patient_id, int user_id) throws IOException, InterruptedException {
         Map<String, Object> data = new HashMap<>();
         data.put("doctor_id", doctor_id);
@@ -384,7 +462,6 @@ public class Client {
         message.put("data", data);
 
         String jsonMessage = gson.toJson(message);
-        //TODO: ENCRYPTED
         System.out.println("\n Before encryption REQUEST_DOCTOR_BY_ID message to Server: "+jsonMessage);
         sendEncrypted(jsonMessage, out, token);
 
@@ -401,6 +478,12 @@ public class Client {
         return doctor;
     }
 
+    /**
+     * Sends a signal file (ZIP base64) and metadata to the server.
+     *
+     * @return true if upload succeeds
+     * @throws Exception server or encryption error
+     */
     public boolean sendSignalToServer(int patientId, int samplingFrequency, LocalDateTime timestamp, String filename, String base64Zip) throws Exception {
 
         // 1. Construir JSON raíz
@@ -424,8 +507,6 @@ public class Client {
         //System.out.println(json);
 
         // 4. Enviar al servidor
-        //out.println(json);
-        //out.flush();
         sendEncrypted(json, out, token);
 
         // 5. Esperar la respuesta del servidor
@@ -444,6 +525,13 @@ public class Client {
         return true;
     }
 
+    /**
+     * Releases network resources: closes PrintWriter, BufferedReader and Socket.
+     *
+     * @param printWriter writer to close
+     * @param in          reader to close
+     * @param socket      socket to close
+     */
     private static void releaseResources(PrintWriter printWriter, BufferedReader in,Socket socket) {
         printWriter.close();
         try{
@@ -460,6 +548,16 @@ public class Client {
         }
     }
 
+    /**
+     * Sends a medical report to the server and waits for confirmation.
+     *
+     * @param report     the report object
+     * @param patient_id patient identifier
+     * @param user_id    doctor or admin ID
+     * @throws IOException          communication error
+     * @throws InterruptedException waiting interruption
+     * @throws ServerError          server-side error
+     */
     public void sendReport(Report report, int patient_id, int user_id) throws IOException, InterruptedException, ServerError {
         Map<String, Object> data = new HashMap<>();
         data.put("user_id", user_id);
@@ -471,7 +569,6 @@ public class Client {
         message.put("data", data);
 
         String jsonMessage = gson.toJson(message);
-        //TODO: ENCRYPTION
         sendEncrypted(jsonMessage, out, token);
 
         JsonObject response;
@@ -486,6 +583,14 @@ public class Client {
         }
     }
 
+    /**
+     * Sends a password change request and validates the server response.
+     *
+     * @param email       the user email
+     * @param newPassword the new password
+     * @throws IOException          if failed
+     * @throws InterruptedException waiting interruption
+     */
     public void changePassword(String email, String newPassword) throws IOException, InterruptedException {
         Map<String, Object> data = new HashMap<>();
         data.put("email", email);
@@ -514,6 +619,13 @@ public class Client {
 
     }
 
+    /**
+     * Encrypts and sends a JSON message using AES.
+     *
+     * @param message the plain JSON string
+     * @param out     output writer
+     * @param AESkey  shared AES session key
+     */
     private void sendEncrypted(String message, PrintWriter out, SecretKey AESkey){
         try{
             String encryptedJson = AESUtil.encrypt(message, AESkey);
@@ -531,6 +643,11 @@ public class Client {
         }
     }
 
+    /**
+     * Sends an alert request to the server and waits for a response.
+     *
+     * @return the alert text sent by the server or empty if failed
+     */
     public String sendAlertToAdmin() {
         String alert= "";
         try {
