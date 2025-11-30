@@ -256,6 +256,10 @@ public class RecordSignal extends JPanel implements ActionListener {
             showFeedbackMessage(errorMessage, "Connecting to Bitalino...");
             showFeedbackMessage(errorMessage2, "Clic start to start recording");
             String macAdd = iptxtField.getText();
+            if(macAdd.equals("")){
+                showErrorMessage(errorMessage, "Enter MAC Address...");
+                return;
+            }
             System.out.println(macAdd);
             //cambiar a conneted and start recording panel
             recorderService = new SignalRecorderService(macAdd);
