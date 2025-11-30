@@ -1,12 +1,9 @@
 package network;
 
-import Events.ServerDisconnectedEvent;
-import Events.ShowHelpDialogEvent;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import encryption.AESUtil;
 import org.junit.jupiter.api.*;
-import org.mockito.ArgumentCaptor;
 import pojos.AppData;
 import pojos.Doctor;
 import pojos.Patient;
@@ -22,7 +19,6 @@ import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -286,7 +282,7 @@ public class ClientTest {
     }
 
     @Test
-    void testSendJsonToServer() throws Exception {
+    void testSendSignalToServer() throws Exception {
 
         Client client = spy(new Client());
         SecretKey aes = AESUtil.generateAESKey();
@@ -309,7 +305,7 @@ public class ClientTest {
         q.add(ok);
         setField(client, "responseQueue", q);
 
-        boolean result = client.sendJsonToServer(
+        boolean result = client.sendSignalToServer(
                 12, 500, LocalDateTime.now(), "sig.zip", "ABC123"
         );
 

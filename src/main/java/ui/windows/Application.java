@@ -7,6 +7,7 @@ import pojos.Doctor;
 import pojos.Patient;
 import pojos.User;
 import network.Client;
+import signalRecording.SignalRecorderService;
 import ui.components.AskQuestionDialog;
 import ui.components.MyButton;
 import ui.components.MyTextField;
@@ -73,6 +74,7 @@ public class Application extends JFrame {
     public static Color dark_turquoise = new Color(52, 152, 143); //#34988f
     private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private Future<?> pendingAlarm = null;
+    private boolean waitingForRecordingStop = false;
     /**
      * Entry point of the graphical application.
      *
@@ -90,6 +92,7 @@ public class Application extends JFrame {
     public Client client;
     private Integer serverPort = 9009;
     public DetectionManager detectionManager;
+    public SignalRecorderService recorderService;
 
     /**
      * Constructs the application window:
@@ -116,6 +119,7 @@ public class Application extends JFrame {
 
         //Subscribe to events
         detectionManager = new DetectionManager();
+        recorderService = new SignalRecorderService();
         UIEventBus.BUS.register(this); //Listens for events
     }
 
@@ -355,7 +359,8 @@ public class Application extends JFrame {
      * Stops the network client if connected, disposes of the window,
      * and terminates the program.
      */
-    public void stopEverything(){
+    /*public void stopEverything(){
+        UIEventBus.BUS.post(new CloseAppEvent());
         if(client != null && client.isConnected()){
             client.stopClient(true);
         }
@@ -363,7 +368,48 @@ public class Application extends JFrame {
         //unsuscribe from events
         UIEventBus.BUS.unregister(this);
         System.exit(0);
+    }*/
+
+    public void stopEverything() {
+
+        // 1) Preguntar si el recordingService existe y está grabando
+        if (recorderService != null && recorderService.isRecording()) {
+
+            System.out.println("⚠ Waiting for recording threads before closing app...");
+
+            waitingForRecordingStop = true;
+
+            // 2) Enviar evento para que SignalRecorderService pare sin guardar
+            UIEventBus.BUS.post(new CloseAppEvent());
+            return; // ← Muy importante: NO cerrar todavía
+        }
+
+        // 3) Si no estaba grabando → cerrar inmediatamente
+        fullyCloseApp();
     }
+
+    private void fullyCloseApp() {
+
+        System.out.println("Shutting down application...");
+
+        if (client != null && client.isConnected()) {
+            client.stopClient(true);
+        }
+
+        dispose();
+        UIEventBus.BUS.unregister(this);
+        System.exit(0);
+    }
+
+    @Subscribe
+    public void onRecordingFullyStopped(RecordingFullyStoppedEvent event) {
+        if (waitingForRecordingStop) {
+            waitingForRecordingStop = false;
+            fullyCloseApp();   // ← Ahora sí cerramos
+        }
+    }
+
+
     private void startOneMinuteTimer(Runnable onTimeout) {
 
         // Cancelar temporizador anterior si existe

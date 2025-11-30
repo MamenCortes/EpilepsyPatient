@@ -482,5 +482,93 @@ public class BITalino {
 		}
 		
 	}
-	
+
+    public Frame[] nonBlockingRead(int nSamples) throws BITalinoException {
+        /**
+         * Reads acquisition frames from the device with a timeout.
+         * Prevents blocking forever when the BITalino disconnects unexpectedly.
+         *
+         * @param nSamples Number of frames to read
+         * @return Vector of frames obtained from the device
+         * @throws BITalinoException if communication is lost
+         */
+        final long TIMEOUT_MS = 1500;  // 1.5 seconds timeout
+        final byte[] buffer = new byte[number_bytes];
+        final byte[] oneByte = new byte[1];
+
+        try {
+            Frame[] frames = new Frame[nSamples];
+            int frameIndex = 0;
+
+            while (frameIndex < nSamples) {
+
+                int total = 0;
+                long start = System.currentTimeMillis();
+
+                // --- Non-blocking read with timeout ---
+                while (total < number_bytes) {
+
+                    // Data available?
+                    if (iStream.available() > 0) {
+                        int bytesRead = iStream.read(buffer, total, number_bytes - total);
+
+                        if (bytesRead < 0) {
+                            throw new BITalinoException(BITalinoErrorTypes.LOST_COMMUNICATION);
+                        }
+
+                        total += bytesRead;
+                    } else {
+                        // No data → wait a bit
+                        Thread.sleep(1);
+                    }
+
+                    // Timeout reached → assume BITalino disconnected
+                    if (System.currentTimeMillis() - start > TIMEOUT_MS) {
+                        throw new BITalinoException(BITalinoErrorTypes.LOST_COMMUNICATION);
+                    }
+                }
+
+                // --- Decode the frame ---
+                Frame[] decoded = decode(buffer);
+
+                if (decoded[0].seq == -1) {
+                    // Realign buffer until a valid frame is found
+                    while (decoded[0].seq == -1) {
+
+                        // Read 1 byte (with timeout)
+                        long t = System.currentTimeMillis();
+                        while (iStream.available() == 0) {
+                            Thread.sleep(1);
+                            if (System.currentTimeMillis() - t > TIMEOUT_MS) {
+                                throw new BITalinoException(BITalinoErrorTypes.LOST_COMMUNICATION);
+                            }
+                        }
+
+                        int read = iStream.read(oneByte);
+                        if (read < 0)
+                            throw new BITalinoException(BITalinoErrorTypes.LOST_COMMUNICATION);
+
+                        // Shift buffer & insert new byte
+                        for (int j = number_bytes - 2; j >= 0; j--) {
+                            buffer[j + 1] = buffer[j];
+                        }
+                        buffer[0] = oneByte[0];
+
+                        decoded = decode(buffer);
+                    }
+                }
+
+                // Valid frame
+                frames[frameIndex] = decoded[0];
+                frameIndex++;
+            }
+
+            return frames;
+
+        } catch (Exception e) {
+            throw new BITalinoException(BITalinoErrorTypes.LOST_COMMUNICATION);
+        }
+    }
+
+
 }

@@ -2,7 +2,10 @@ package signalRecording;
 
 import BITalino.*;
 import Events.BITalinoDisconnectedEvent;
+import Events.CloseAppEvent;
+import Events.RecordingFullyStoppedEvent;
 import Events.UIEventBus;
+import com.google.common.eventbus.Subscribe;
 import org.junit.Test;
 
 import java.io.*;
@@ -38,7 +41,7 @@ public class SignalRecorderService {
     private static String MAC_ADDRESS;
 
     private BITalino bitalino;
-    private volatile boolean isRecording = false;
+    public volatile boolean isRecording = false;
     private volatile boolean connected = false;
     private volatile boolean recordingInterrupted = false;
 
@@ -67,8 +70,19 @@ public class SignalRecorderService {
      * @param MAC_ADDRESS Bluetooth MAC address of the target BITalino device
      */
     public SignalRecorderService(String MAC_ADDRESS) {
+
         SignalRecorderService.MAC_ADDRESS = MAC_ADDRESS;
+        UIEventBus.BUS.register(this);
     }
+
+    public SignalRecorderService() {
+        UIEventBus.BUS.register(this);
+    }
+
+    public static void setMacAddress(String macAddress) {
+        MAC_ADDRESS = macAddress;
+    }
+
     /**
      * Returns the sampling frequency used for acquisition.
      *
@@ -211,13 +225,13 @@ public class SignalRecorderService {
         } else {
             throw new RecordingException(RecordingErrors.ZIP_CREATION_FAILED);
         }
-        UIEventBus.BUS.post(
+        /*UIEventBus.BUS.post(
                 new BITalinoDisconnectedEvent(
                         java.time.LocalDateTime.now(),
                         true,   // final ZIP always exists if we reached here
                         "Recording successfully completed."
                 )
-        );
+        );*/
     }
     /**
      * Returns the ZIP file generated after stopping the recording.
@@ -237,6 +251,10 @@ public class SignalRecorderService {
         return connected;
     }
 
+    public boolean isRecording() {
+        return isRecording;
+    }
+
 
     // ------------------------ THREADS ------------------------
 
@@ -248,7 +266,8 @@ public class SignalRecorderService {
             try {
                 while (isRecording) {
 
-                    Frame[] frames = bitalino.read(10);
+                    //Frame[] frames = bitalino.read(10);
+                    Frame[] frames = bitalino.nonBlockingRead(10);
                     if (frames == null) continue;
 
                     for (Frame f : frames) {
@@ -463,6 +482,67 @@ public class SignalRecorderService {
 
     }
 
+    @Subscribe
+    public void onAppClosing(CloseAppEvent event) {
+        if (isRecording) {
+            forcedAbortRecording();
+        } else {
+            // Si no había grabación, solo cerrar el dispositivo
+            try {
+                if (connected && bitalino != null) {
+                    bitalino.stop();
+                    bitalino.close();
+                }
+            } catch (Exception ignored) {}
+
+            connected = false;
+        }
+    }
+
+    public void forcedAbortRecording() {
+        try {
+            // Indica que la grabación no debe continuar
+            System.out.println("Aborting recording and closing threads");
+            isRecording = false;
+            recordingInterrupted = true;
+
+            // Cerrar BITalino si estaba activo
+            try {
+                if (connected && bitalino != null) {
+                    bitalino.stop();
+                    bitalino.close();
+                }
+            } catch (Exception ignored) {}
+
+            connected = false;
+
+            // Finalizamos hilos sin enviar POISON PILL al guardado
+            // porque eso generaría ZIP y no queremos guardar nada
+            if (readThread != null) readThread.interrupt();
+            if (analyzeThread != null) analyzeThread.interrupt();
+            if (saveThread != null) saveThread.interrupt();
+
+            // IMPORTANTE: No generar ZIP
+            csvTempFile = null;
+            zipFile = null;
+
+            // Notifica a la UI
+            UIEventBus.BUS.post(new RecordingFullyStoppedEvent());
+            UIEventBus.BUS.unregister(this);
+
+        } catch (Exception ignored) {}
+    }
+
+    public void closeConnectionToBitalino() throws RecordingException{
+        try {
+            if (connected && bitalino != null) {
+                bitalino.stop();
+                bitalino.close();
+            }
+        } catch (Exception e) {  throw new RecordingException(RecordingErrors.DEVICE_READ_ERROR); }
+        finally { connected = false;
+            System.out.println("Connection to Bitalino closed");}
+    }
 
 }
 
