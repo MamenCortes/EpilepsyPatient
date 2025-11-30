@@ -4,10 +4,13 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.security.KeyPair;
 import java.util.Objects;
 
 import javax.swing.*;
 
+import encryption.RSAKeyManager;
+import encryption.RSAUtil;
 import net.miginfocom.swing.MigLayout;
 import network.LogInError;
 import pojos.AppData;
@@ -464,14 +467,37 @@ public class UserLogIn extends JPanel implements ActionListener{
                     //TODO: send data to Server to check if token is valid for the user (email,password)
                     ///TODO: when confirmation received, create private and public keys, send public key to server and if it doesn't throw any errors,
                     ///then save private key in computer file and return no logIn
-                    errorMessageDialog.setText("Password changed successfully");
-                    errorMessageDialog.setVisible(true);
+                    try{
+                        boolean activated = appMenu.client.sendActivationRequest(email,pass,token);
+
+                        if (activated) {
+                            KeyPair keyPair = RSAKeyManager.generateKeyPair();
+                            appMenu.client.setClientKeyPair(keyPair);
+                            appMenu.client.sendPublicKey(keyPair.getPublic(), email);
+                            // TODO: CHECK if file already exists
+                            String fileEmail = email.replaceAll("[@.]", "_");
+                            if (!RSAUtil.keysExist(fileEmail)){
+                                RSAKeyManager.saveKey(keyPair, fileEmail);
+                            }else {
+                                System.out.println("Key files already exist. Skipping save.");
+                                activated = false;
+                            }
+
+                            JOptionPane.showMessageDialog(parentFrame, "Account activated successfully!");
+                        }else {
+                            errorMessageDialog.setText("Activation failed. Check your token and password provided");
+                            errorMessageDialog.setVisible(true);
+                            activated = false;
+                        }
+                    }catch (Exception ex){
+                        errorMessageDialog.setText("Error during activation: "+ex.getMessage());
+                        errorMessageDialog.setVisible(true);
+                    }
                     dialog.dispose();
                 }else{
                     errorMessageDialog.setText("Complete all fields");
                     errorMessageDialog.setVisible(true);
                 }
-
             }
         });
 

@@ -30,4 +30,60 @@ public class RSAKeyManager {
         KeyPair pair = generator.generateKeyPair();
         return pair;
     }
+    public static void saveKey (KeyPair pair, String filename){
+        //Create a file object with reference to a file path
+        File publicFile = new File(filename + "_public_key");
+        File privateFile = new File (filename + "_private_key");
+
+        if (publicFile.exists() || privateFile.exists()){
+            System.out.println("The key files already exist. No overwriting.");
+            return;
+        }
+
+        try (FileOutputStream publicOut = new FileOutputStream(publicFile);
+             FileOutputStream privateOut = new FileOutputStream(privateFile) ){ //To automatically close resources at the end of the try block
+            publicOut.write(pair.getPublic().getEncoded()); //writes the public key in bytes
+            privateOut.write(pair.getPrivate().getEncoded()); //writes the private key in bytes
+
+            System.out.println("Public and private keys saved successfully.");
+
+        } catch (IOException e) {
+            throw new RuntimeException("Error saving keys: "+e.getMessage(),e);
+        }
+
+    }
+
+    public static PrivateKey retrievePrivateKey (String filename){
+        File privateKeyFile = new File(filename + "_private_key");
+        if (!privateKeyFile.exists()){
+            throw new RuntimeException("Private key file not found: " +privateKeyFile.getAbsolutePath());
+        }
+
+        try(FileInputStream privateIn = new FileInputStream(privateKeyFile)){
+            byte[] privateKeyBytes = privateIn.readAllBytes();
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+            return keyFactory.generatePrivate(privateKeySpec);
+
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new RuntimeException("Error retrieving private key: "+e.getMessage(), e);
+        }
+    }
+
+    public static PublicKey retrievePublicKey (String filename){
+        File publicKeyFile = new File(filename + "_public_key");
+        if (!publicKeyFile.exists()){
+            throw new RuntimeException("Public key file not found: " +publicKeyFile.getAbsolutePath());
+        }
+
+        try(FileInputStream publicIn = new FileInputStream(publicKeyFile)){
+            byte[] publicKeyBytes = publicIn.readAllBytes();
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
+            return keyFactory.generatePublic(publicKeySpec);
+
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new RuntimeException("Error retrieving private key: "+e.getMessage(), e);
+        }
+    }
 }

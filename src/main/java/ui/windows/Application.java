@@ -177,7 +177,7 @@ public class Application extends JFrame {
                     JOptionPane.ERROR_MESSAGE
             );*/
 
-            showMessageDialog(this, "The conexion with the server was interrupted");
+            showMessageDialog(this, "The connection with the server was interrupted");
 
             // Espera a que el message dialog finalice y luego lanza el siguiente diálogo
             SwingUtilities.invokeLater(() -> {
