@@ -527,21 +527,34 @@ public class Client {
         }
     }
 
-    public void sendAlertToAdmin(Patient patient) {
+    public String sendAlertToAdmin() {
+        String alert= "";
         try {
-            Map<String, Object> data = new HashMap<>();
-            data.put("patient", patient.toJson());
 
             Map<String, Object> message = new HashMap<>();
             message.put("type", "ALERT_ADMIN");
-            message.put("data", data);
 
             String jsonMessage = gson.toJson(message);
             System.out.println("Sending alert to admin: " + jsonMessage);
-            out.println(jsonMessage); // send JSON message
+            sendEncrypted(jsonMessage, out, token); // send JSON message
+
+            JsonObject response;
+            do {
+                response = responseQueue.take();
+            } while (!response.get("type").getAsString().equals("ALERT_ADMIN_RESPONSE"));
+
+            String status = response.get("status").getAsString();
+
+            if (status.equals("SUCCESS")) {
+                 alert= response.get("alert").getAsString();
+            }
+            System.out.println("Alert received from server: " + alert);
+
         } catch (Exception e) {
             System.out.println("Error sending alert to admin: " + e.getMessage());
         }
+        return alert;
     }
+
 }
 

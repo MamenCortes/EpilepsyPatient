@@ -1,10 +1,11 @@
 package ui.windows;
 
-import BITalino.RecordingController;
-import com.google.gson.JsonObject;
+import signalRecording.RecordingException;
+import Events.BITalinoDisconnectedEvent;
+import Events.UIEventBus;
+import com.google.common.eventbus.Subscribe;
 import net.miginfocom.swing.MigLayout;
-import BITalino.SignalRecorderService;
-import ui.components.AreYouOkayPopup;
+import signalRecording.SignalRecorderService;
 import ui.components.MyButton;
 import ui.components.MyTextField;
 
@@ -89,6 +90,7 @@ public class RecordSignal extends JPanel implements ActionListener {
     Boolean recording = false;
     Boolean saving = false;
     Application appMain;
+    private String macAdd="";
 
     public static void main(String[] args) {
         RecordSignal symptomPanel = null;
@@ -114,6 +116,8 @@ public class RecordSignal extends JPanel implements ActionListener {
     public RecordSignal(Application app) {
         appMain = app;
         initPanel();
+        UIEventBus.BUS.register(this);
+
     }
     /**
      * Initializes all UI components and layouts:
@@ -253,17 +257,23 @@ public class RecordSignal extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource() == okButton){
+            errorMessage.setVisible(false);
+            errorMessage2.setVisible(false);
+
             showFeedbackMessage(errorMessage, "Connecting to Bitalino...");
-            showFeedbackMessage(errorMessage2, "Clic start to start recording");
-            String macAdd = iptxtField.getText();
+            macAdd = iptxtField.getText();
             System.out.println(macAdd);
             //cambiar a conneted and start recording panel
             recorderService = new SignalRecorderService(macAdd);
-            recorderService.bitalinoConnect();
+            try {
+                recorderService.bitalinoConnect();
+            } catch (RecordingException ex) {
+                showFeedbackMessage(errorMessage, ex.getError().getFullMessage());
+            }
             if (recorderService.isConnected()) {
                 cardLayout.show(cardPanel, "Panel2");
             } else {
-                showFeedbackMessage(errorMessage, "Connection failed");
+                showFeedbackMessageDelayed(errorMessage, "Connection failed, review MAC address and make sure BITalino is on.", 1500);
             }
 
         }else if(e.getSource() == back2MenuBt){
@@ -271,9 +281,27 @@ public class RecordSignal extends JPanel implements ActionListener {
             resetPanel();
             appMain.changeToMainMenu();
         } else if (e.getSource() == startRecording) {
-            recorderService.startRecording();
-            RecordingController controller = new RecordingController(new AreYouOkayPopup(), appMain, appMain.patient);
-            recorderService.setRecordingContoller(controller);
+            // try to reconnect if necessary
+            if (!recorderService.isConnected()) {
+                System.out.println("Reconnecting to BITalino...");
+                showFeedbackMessage(errorMessage2, "Reconnecting...");
+                try {
+                    recorderService.bitalinoConnect();
+                } catch (RecordingException ex) {
+                    showFeedbackMessage(errorMessage, ex.getError().getFullMessage());
+                }
+                if (!recorderService.isConnected()) {
+                    System.out.println("Reconnection failed.");
+                    showFeedbackMessageDelayed(errorMessage2, "Reconnection failed please try again ", 1500);
+                    return;
+                }
+            }
+            try {
+                recorderService.startRecording();
+            } catch ( RecordingException ex) {
+                showFeedbackMessage(errorMessage2, ex.getError().getFullMessage());
+                return;
+            }
             if(!recording){
                 image.setIcon(recordingGif);
                 showFeedbackMessage(errorMessage2, "Recording...");
@@ -288,12 +316,21 @@ public class RecordSignal extends JPanel implements ActionListener {
                     buttonsLayout.show(buttonStack, "NULL");
                     image.setIcon(uploadingGif);
                     showFeedbackMessage(errorMessage2, "Saving recording...");
-                    recording= false;
-                    startSavingProcess();
+                    try {
+                        recorderService.stopRecording();
+                    } catch (RecordingException ex) {
+                        showFeedbackMessage(errorMessage2, ex.getError().getFullMessage());
+                    }
                 }
             }
 
         }
+    }
+    private void showFeedbackMessageDelayed(JLabel label, String msg, int delayMs) {
+        new javax.swing.Timer(delayMs, e -> {
+            showFeedbackMessage(label, msg);
+            ((javax.swing.Timer) e.getSource()).stop();
+        }).start();
     }
     /**
      * If saving fails, this dialog allows the user to retry the upload process.
@@ -316,6 +353,21 @@ public class RecordSignal extends JPanel implements ActionListener {
             buttonsLayout.show(buttonStack, "START");
             recording = false;
         }
+
+    }
+    @Subscribe
+    public void onBitalinoDisconnected(BITalinoDisconnectedEvent event) {
+
+        // Only attempt upload if a partial recording exists
+        if (event.isPartialRecordingAvailable()) {
+            startSavingProcess();
+        } else {
+            showFeedbackMessage(errorMessage2,
+                    "BITalino disconnected unexpectedly. No recording data available.");
+            buttonsLayout.show(buttonStack, "START");
+            back2MenuBt.setVisible(true);
+            recording = false;
+        }
     }
     /**
      * Starts the asynchronous saving process:
@@ -330,23 +382,26 @@ public class RecordSignal extends JPanel implements ActionListener {
      */
     private void startSavingProcess() {
         new SwingWorker<Boolean, Void>() {
-            boolean success= false;
             @Override
             protected Boolean doInBackground() {
                 try {
-                    recorderService.stopRecording();
-                    lastZipFile = recorderService.getZipFile();
+                    File zip = recorderService.getZipFile();
+                    if (zip == null || !zip.exists()) {
+                        // No ZIP available → upload cannot proceed
+                        return false;
+                    }
+
                     int patient_id= appMain.patient.getId();
                     int sampling_rate= recorderService.getFs();
                     LocalDateTime timestamp= LocalDateTime.now();
-                    String filename= lastZipFile.getName();
-                    byte[] zipBytes = Files.readAllBytes(lastZipFile.toPath());
+                    String filename= zip.getName();
+
+                    byte[] zipBytes = Files.readAllBytes(zip.toPath());
                     String base64Zip = Base64.getEncoder().encodeToString(zipBytes);
-                   success= appMain.client.sendJsonToServer( patient_id, sampling_rate, timestamp, filename, base64Zip);
-                    Thread.sleep(3000);
-                    return success;
+
+                    return appMain.client.sendJsonToServer(patient_id, sampling_rate, timestamp, filename, base64Zip);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    // If anything fails during encoding or sending
                     return false;
                 }
             }
@@ -366,12 +421,12 @@ public class RecordSignal extends JPanel implements ActionListener {
                         askRetry();
                     }
                 } catch (Exception ex) {
-                    ex.printStackTrace();
                     askRetry();
                 }
             }
         }.execute();
     }
+
     /**
      * Resets all UI elements to the initial state:
      * <ul>
@@ -390,6 +445,7 @@ public class RecordSignal extends JPanel implements ActionListener {
         errorMessage.setVisible(false);
         iptxtField.setText("");
     }
+
 
 }
 

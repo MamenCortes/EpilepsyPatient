@@ -1,7 +1,5 @@
 package ui.components;
 
-import BITalino.AlarmManager;
-
 import javax.swing.*;
 import java.awt.*;
 
