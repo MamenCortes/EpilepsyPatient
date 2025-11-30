@@ -1,5 +1,6 @@
 package network;
 
+import Events.CloseAppEvent;
 import Events.ServerDisconnectedEvent;
 import Events.UIEventBus;
 import com.google.gson.*;

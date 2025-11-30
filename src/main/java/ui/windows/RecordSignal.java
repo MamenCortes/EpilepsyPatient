@@ -1,5 +1,7 @@
 package ui.windows;
 
+import Events.CloseAppEvent;
+import Events.RecordingFullyStoppedEvent;
 import signalRecording.RecordingException;
 import Events.BITalinoDisconnectedEvent;
 import Events.UIEventBus;
@@ -75,7 +77,7 @@ public class RecordSignal extends JPanel implements ActionListener {
     //Components
     JLabel errorMessage;
     JLabel errorMessage2;
-    MyButton okButton;
+    MyButton connectBt;
     MyButton back2MenuBt;
     MyButton stopRecording;
     MyButton startRecording;
@@ -115,6 +117,7 @@ public class RecordSignal extends JPanel implements ActionListener {
      */
     public RecordSignal(Application app) {
         appMain = app;
+        recorderService = app.recorderService; //Only one instance of the recorder service
         initPanel();
         UIEventBus.BUS.register(this);
 
@@ -168,16 +171,16 @@ public class RecordSignal extends JPanel implements ActionListener {
         errorMessage.setText("Error message test");
         errorMessage.setVisible(false);
 
-        okButton = new MyButton();
-        okButton.addActionListener(this);
-        okButton.setText("CONNECT");
-        okButton.setBackground(Application.turquoise);
-        okButton.setForeground(Color.white);
+        connectBt = new MyButton();
+        connectBt.addActionListener(this);
+        connectBt.setText("CONNECT");
+        connectBt.setBackground(Application.turquoise);
+        connectBt.setForeground(Color.white);
 
-        connectBitalino.add(okButton, "center, growx");
+        connectBitalino.add(connectBt, "center, w 60%");
         connectBitalino.add(errorMessage, "center, growx");
 
-        recordSignalPanel.setLayout(new MigLayout("wrap, fill, inset 20", "push[center][center]push", "push[30%][10%][70%]push"));
+        recordSignalPanel.setLayout(new MigLayout("wrap, fill, inset 20, debug", "[center][center]", "push[70%][10%][20%]push"));
         recordSignalPanel.setBackground(Color.white);
         startRecording = new MyButton("Start Recording", Application.turquoise, Color.white);
         startRecording.addActionListener(this);
@@ -203,7 +206,7 @@ public class RecordSignal extends JPanel implements ActionListener {
         buttonStack.add(empty, "NULL");
         buttonsLayout.show(buttonStack, "START");
 
-        recordSignalPanel.add(buttonStack, "cell 0 2, center, growx");
+        recordSignalPanel.add(buttonStack, "cell 0 2 2 1, center, w 40%");
 
         recordSignalPanel.add(image, "cell 0 0 2 1, growx");
         recordSignalPanel.add(errorMessage2, "cell 0 1 2 1, growx");
@@ -256,68 +259,81 @@ public class RecordSignal extends JPanel implements ActionListener {
      */
     @Override
     public void actionPerformed(ActionEvent e) {
-        if(e.getSource() == okButton){
+        if(e.getSource() == connectBt){
             errorMessage.setVisible(false);
-            errorMessage2.setVisible(false);
+            errorMessage.setText("");
 
-            showFeedbackMessage(errorMessage, "Connecting to Bitalino...");
+
             macAdd = iptxtField.getText();
             System.out.println(macAdd);
+
+            if(macAdd.equals("") || macAdd.length() != 12){
+                showErrorMessage(errorMessage, "Please enter a valid MAC Address");
+                return;
+            }
+
+            showFeedbackMessage(errorMessage, "Connecting to Bitalino...");
             //cambiar a conneted and start recording panel
-            recorderService = new SignalRecorderService(macAdd);
+            //recorderService = new SignalRecorderService(macAdd);
+            recorderService.setMacAddress(macAdd);
             try {
                 recorderService.bitalinoConnect();
             } catch (RecordingException ex) {
-                showFeedbackMessage(errorMessage, ex.getError().getFullMessage());
+                showErrorMessage(errorMessage, ex.getError().getDescription());
+                return;
             }
             if (recorderService.isConnected()) {
                 cardLayout.show(cardPanel, "Panel2");
             } else {
-                showFeedbackMessageDelayed(errorMessage, "Connection failed, review MAC address and make sure BITalino is on.", 1500);
+                showErrorMessage(errorMessage, "Connection failed, review MAC address and make sure BITalino is on.");
             }
 
         }else if(e.getSource() == back2MenuBt){
             cardLayout.show(cardPanel, "Panel1");
             resetPanel();
+            try{
+                recorderService.closeConnectionToBitalino();
+            }catch(RecordingException ex){
+                showErrorMessage(errorMessage, ex.getError().getDescription());
+            }
             appMain.changeToMainMenu();
         } else if (e.getSource() == startRecording) {
             // try to reconnect if necessary
             if (!recorderService.isConnected()) {
-                System.out.println("Reconnecting to BITalino...");
-                showFeedbackMessage(errorMessage2, "Reconnecting...");
-                try {
+                System.out.println("BITalino not connected");
+                showErrorMessage(errorMessage2, "BITalino is not connected");
+                return;
+                /*try {
                     recorderService.bitalinoConnect();
                 } catch (RecordingException ex) {
-                    showFeedbackMessage(errorMessage, ex.getError().getFullMessage());
-                }
-                if (!recorderService.isConnected()) {
+                    showFeedbackMessage(errorMessage2, ex.getError().getFullMessage());
+                    return;
+                }*/
+                /*if (!recorderService.isConnected()) {
                     System.out.println("Reconnection failed.");
                     showFeedbackMessageDelayed(errorMessage2, "Reconnection failed please try again ", 1500);
                     return;
-                }
+                }*/
             }
+
             try {
                 recorderService.startRecording();
+                if(!recording){
+                    recording = true;
+                    updateUIRecording();
+                }
             } catch ( RecordingException ex) {
-                showFeedbackMessage(errorMessage2, ex.getError().getFullMessage());
-                return;
+                showErrorMessage(errorMessage2, ex.getError().getFullMessage());
             }
-            if(!recording){
-                image.setIcon(recordingGif);
-                showFeedbackMessage(errorMessage2, "Recording...");
-                recording = true;
-                back2MenuBt.setVisible(false);
-                buttonsLayout.show(buttonStack, "STOP");
-            }
+
         } else if (e.getSource() == stopRecording) {
             if(recording){
                 int option = JOptionPane.showConfirmDialog(this,"Are you sure you want to stop the recording?");
                 if(option == JOptionPane.YES_OPTION){
-                    buttonsLayout.show(buttonStack, "NULL");
-                    image.setIcon(uploadingGif);
-                    showFeedbackMessage(errorMessage2, "Saving recording...");
+                    updateUISaving();
                     try {
                         recorderService.stopRecording();
+                        startSavingProcess();
                     } catch (RecordingException ex) {
                         showFeedbackMessage(errorMessage2, ex.getError().getFullMessage());
                     }
@@ -326,6 +342,35 @@ public class RecordSignal extends JPanel implements ActionListener {
 
         }
     }
+
+    private void hideErrorMessage(JLabel errorMessage) {
+        errorMessage.setVisible(false);
+        errorMessage.setText("");
+    }
+
+    private void updateUIWaitingToStartRecording(){
+        //recording = false;
+        hideErrorMessage(errorMessage2);
+        back2MenuBt.setVisible(true);
+        buttonsLayout.show(buttonStack, "START");
+        image.setIcon(recordingImg); // reset animation
+
+    }
+
+    private void updateUIRecording(){
+        back2MenuBt.setVisible(false);
+        image.setIcon(recordingGif);
+        showFeedbackMessage(errorMessage2, "Recording...");
+        buttonsLayout.show(buttonStack, "STOP");
+    }
+
+    private void updateUISaving(){
+        back2MenuBt.setVisible(false);
+        buttonsLayout.show(buttonStack, "NULL");
+        image.setIcon(uploadingGif);
+        showFeedbackMessage(errorMessage2, "Saving recording...");
+    }
+
     private void showFeedbackMessageDelayed(JLabel label, String msg, int delayMs) {
         new javax.swing.Timer(delayMs, e -> {
             showFeedbackMessage(label, msg);
@@ -358,6 +403,7 @@ public class RecordSignal extends JPanel implements ActionListener {
     @Subscribe
     public void onBitalinoDisconnected(BITalinoDisconnectedEvent event) {
 
+        /*System.out.println("BITalino disconnected");
         // Only attempt upload if a partial recording exists
         if (event.isPartialRecordingAvailable()) {
             startSavingProcess();
@@ -367,7 +413,37 @@ public class RecordSignal extends JPanel implements ActionListener {
             buttonsLayout.show(buttonStack, "START");
             back2MenuBt.setVisible(true);
             recording = false;
-        }
+        }*/
+
+        SwingUtilities.invokeLater(() -> {
+
+            System.out.println("Bitalino disconnected");
+            // 1 — Stop UI recording state
+            recording = false;
+            updateUIWaitingToStartRecording();
+
+            // 2 — Show error
+            showErrorMessage(errorMessage2, event.getMessage());
+
+            // 3 — If partial recording exists → ask user permission before saving
+            if (event.isPartialRecordingAvailable()) {
+                int option = JOptionPane.showConfirmDialog(
+                        this,
+                        "BITalino disconnected unexpectedly.\nA partial recording is available.\nDo you want to save it?",
+                        "Unexpected Disconnection",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                );
+
+                if (option == JOptionPane.YES_OPTION) {
+                    startSavingProcess();
+                } else {
+                    // User declined saving
+                    updateUIWaitingToStartRecording();
+                    cardLayout.show(cardPanel, "Panel1");
+                }
+            }
+        });
     }
     /**
      * Starts the asynchronous saving process:
@@ -385,6 +461,7 @@ public class RecordSignal extends JPanel implements ActionListener {
             @Override
             protected Boolean doInBackground() {
                 try {
+                    System.out.println("Starting saving process");
                     File zip = recorderService.getZipFile();
                     if (zip == null || !zip.exists()) {
                         // No ZIP available → upload cannot proceed
@@ -415,7 +492,7 @@ public class RecordSignal extends JPanel implements ActionListener {
                         image.setIcon(uploadedImg);
                         showFeedbackMessage(errorMessage2, "Signal saved successfully.");
                         back2MenuBt.setVisible(true);
-                        buttonsLayout.show(buttonStack, "START");
+                        buttonsLayout.show(buttonStack, "NULL");
                         recording = false;
                     } else {
                         askRetry();
@@ -446,6 +523,10 @@ public class RecordSignal extends JPanel implements ActionListener {
         iptxtField.setText("");
     }
 
+    @Subscribe
+    private void onClosingApp(CloseAppEvent event) {
+        UIEventBus.BUS.unregister(this);
+    }
 
 }
 
