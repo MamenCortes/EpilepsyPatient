@@ -38,13 +38,6 @@ public class Client {
     private final CountDownLatch tokenReady = new CountDownLatch(1);
 
     public Client(){
-        //this.appMain = appMain;
-        //generates the public and private key pair
-        try {
-            this.clientKeyPair = RSAKeyManager.generateKeyPair();
-        }catch (Exception ex){
-            System.out.println("Error generating key pair: "+ex.getMessage());
-        }
     }
 
     public Boolean connect(String ip, int port) {
@@ -57,12 +50,6 @@ public class Client {
                     new InputStreamReader(socket.getInputStream())
             );
             running = true;
-            System.out.println("This is the Client's Key Pair: ");
-            System.out.println("Public Key (Base64): " + Base64.getEncoder().encodeToString(clientKeyPair.getPublic().getEncoded()));
-            System.out.println("Private Key (Base64): " + Base64.getEncoder().encodeToString(clientKeyPair.getPrivate().getEncoded()));sendPublicKey(); //TODO: Should I send it with the token or separated?
-            System.out.println("🔍 JVM identity hash: " + System.identityHashCode(ClassLoader.getSystemClassLoader()));
-            sendTokenRequest();
-
             sendInitialMessage();
             startListener();
             return true;
@@ -121,9 +108,10 @@ public class Client {
                                     boolean verified = signature.verify(signatureBytes);
                                     if (verified) {
                                         System.out.println("Token verified and trusted");
+                                        //Reconstruction of the Secret Key on the client side
                                         this.token = new SecretKeySpec(tokenBytes, 0, tokenBytes.length, "AES");
+                                        tokenReady.countDown();
                                         System.out.println("🔑 Server's AES Token (Base64): " + Base64.getEncoder().encodeToString(this.token.getEncoded()));
-                                        tokenReady.countDown(); //signal login can proceed
                                     } else {
                                         System.out.println("Signature verification failed. Do not trust the token.");
                                         //This ensures that if the token is not received, the connection STOPS
@@ -158,7 +146,7 @@ public class Client {
                     }
 
                     try {
-                        responseQueue.put(decryptedRequest); //TODO: this is where it is doing everything
+                        responseQueue.put(decryptedRequest);
                     }catch (InterruptedException e){
                         JsonObject jsonObject = new JsonObject();
                         jsonObject.addProperty("type", "LOGIN_REQUEST_RESPONSE");
@@ -181,20 +169,51 @@ public class Client {
         listener.start();
     }
 
-    private void sendTokenRequest(){
+    public void setClientKeyPair (KeyPair keyPair){
+        this.clientKeyPair = keyPair;
+    }
+
+    public boolean sendActivationRequest (String email, String temporaryPass, String oneTimeToken) throws InterruptedException {
+        Map<String, Object> data = new HashMap<>();
+        data.put("email", email);
+        data.put("temp_pass", temporaryPass);
+        data.put("temp_token", oneTimeToken);
+
+        Map<String, Object> request = new HashMap<>();
+        request.put("type", "ACTIVATION_REQUEST");
+        request.put("data", data);
+
+        out.println(gson.toJson(request)); //Plain text
+        out.flush();
+
+        System.out.println("📤 ACTIVATION_REQUEST sent to server: " + request);
+
+        JsonObject response;
+        do{
+            response = responseQueue.take();
+        }while (response.get("type").getAsString().equals("ACTIVATION_RESPONSE"));
+        String status = response.get("status").getAsString();
+        return status.equals("SUCCESS");
+    }
+    public void sendTokenRequest(String email){
         JsonObject tokenRequest = new JsonObject();
         tokenRequest.addProperty("type", "TOKEN_REQUEST");
+        tokenRequest.addProperty("email",email);
         out.println(gson.toJson(tokenRequest));
         out.flush();
 
         System.out.println("TOKEN_REQUEST sent to the Server");
     }
 
-    public void sendPublicKey() {
-        String clientPublicKey = Base64.getEncoder().encodeToString(clientKeyPair.getPublic().getEncoded());
+    public void sendPublicKey(PublicKey publicKey, String email) {
+        String clientPublicKey = Base64.getEncoder().encodeToString(publicKey.getEncoded());
+        JsonObject data = new JsonObject();
+        data.addProperty("email", email);
+        data.addProperty("public_key", clientPublicKey);
+
         JsonObject response = new JsonObject();
         response.addProperty("type", "CLIENT_PUBLIC_KEY");
-        response.addProperty("data", clientPublicKey);
+        response.add("data", data);
         out.println(gson.toJson(response));
         out.flush();
 
@@ -269,6 +288,17 @@ public class Client {
      */
     public AppData login(String email, String password) throws IOException, InterruptedException, LogInError {
         //String message = "LOGIN;" + email + ";" + password;
+        String fileEmail = email.replaceAll("[@.]", "_");
+        //TODO: store public and private key
+        PrivateKey privateKey =RSAKeyManager.retrievePrivateKey(fileEmail);
+        System.out.println("This is the client's private key: "+Base64.getEncoder().encodeToString(privateKey.getEncoded()));
+        PublicKey publicKey = RSAKeyManager.retrievePublicKey(fileEmail);
+        System.out.println("This is the client's public key: "+Base64.getEncoder().encodeToString(publicKey.getEncoded()));
+        this.clientKeyPair = new KeyPair(publicKey,privateKey);
+        sendTokenRequest(email); //With this it gets again the server's public key and the secret key
+        System.out.println("\nWaiting for token to arrive...");
+        tokenReady.await();
+        System.out.println("Token received, continuing with login process...");
 
         Map<String, Object> data = new HashMap<>();
         data.put("email", email);
@@ -485,7 +515,6 @@ public class Client {
             String encryptedJson = AESUtil.encrypt(message, AESkey);
             JsonObject wrapper = new JsonObject();
 
-            //TODO: ver si realmente el type debería ser especifico para cada case o no
             wrapper.addProperty("type", "ENCRYPTED");
             wrapper.addProperty("data", encryptedJson);
 
