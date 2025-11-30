@@ -1,6 +1,5 @@
 package network;
 
-import Events.CloseAppEvent;
 import Events.ServerDisconnectedEvent;
 import Events.UIEventBus;
 import com.google.gson.*;
@@ -192,6 +191,9 @@ public class Client {
         JsonObject response;
         do{
             response = responseQueue.take();
+            if(response.get("type").getAsString().equals("ACTIVATION_RESPONSE")){
+                break;
+            }
         }while (response.get("type").getAsString().equals("ACTIVATION_RESPONSE"));
         String status = response.get("status").getAsString();
         return status.equals("SUCCESS");
@@ -287,7 +289,7 @@ public class Client {
      *
      * @see Gson
      */
-    public AppData login(String email, String password) throws IOException, InterruptedException, LogInError {
+    public AppData login(String email, String password) throws IOException, InterruptedException, LogInError, KeyErrorException{
         //String message = "LOGIN;" + email + ";" + password;
         String fileEmail = email.replaceAll("[@.]", "_");
         //TODO: store public and private key
@@ -399,7 +401,7 @@ public class Client {
         return doctor;
     }
 
-    public boolean sendJsonToServer(int patientId, int samplingFrequency, LocalDateTime timestamp, String filename, String base64Zip) throws Exception {
+    public boolean sendSignalToServer(int patientId, int samplingFrequency, LocalDateTime timestamp, String filename, String base64Zip) throws Exception {
 
         // 1. Construir JSON raíz
         JsonObject root = new JsonObject();
@@ -418,12 +420,13 @@ public class Client {
         root.addProperty("dataBytes", base64Zip);
 
         String json = gson.toJson(root);
-        System.out.println("➡ Sending JSON:");
-        System.out.println(json);
+        System.out.println("➡ Sending before encryption: "+json);
+        //System.out.println(json);
 
         // 4. Enviar al servidor
-        out.println(json);
-        out.flush();
+        //out.println(json);
+        //out.flush();
+        sendEncrypted(json, out, token);
 
         // 5. Esperar la respuesta del servidor
         JsonObject response;

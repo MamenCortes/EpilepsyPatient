@@ -1,7 +1,6 @@
 package ui.windows;
 
 import Events.CloseAppEvent;
-import Events.RecordingFullyStoppedEvent;
 import signalRecording.RecordingException;
 import Events.BITalinoDisconnectedEvent;
 import Events.UIEventBus;
@@ -180,7 +179,7 @@ public class RecordSignal extends JPanel implements ActionListener {
         connectBitalino.add(connectBt, "center, w 60%");
         connectBitalino.add(errorMessage, "center, growx");
 
-        recordSignalPanel.setLayout(new MigLayout("wrap, fill, inset 20, debug", "[center][center]", "push[70%][10%][20%]push"));
+        recordSignalPanel.setLayout(new MigLayout("wrap, fill, inset 20", "[center][center]", "push[70%][10%][20%]push"));
         recordSignalPanel.setBackground(Color.white);
         startRecording = new MyButton("Start Recording", Application.turquoise, Color.white);
         startRecording.addActionListener(this);
@@ -303,17 +302,6 @@ public class RecordSignal extends JPanel implements ActionListener {
                 System.out.println("BITalino not connected");
                 showErrorMessage(errorMessage2, "BITalino is not connected");
                 return;
-                /*try {
-                    recorderService.bitalinoConnect();
-                } catch (RecordingException ex) {
-                    showFeedbackMessage(errorMessage2, ex.getError().getFullMessage());
-                    return;
-                }*/
-                /*if (!recorderService.isConnected()) {
-                    System.out.println("Reconnection failed.");
-                    showFeedbackMessageDelayed(errorMessage2, "Reconnection failed please try again ", 1500);
-                    return;
-                }*/
             }
 
             try {
@@ -403,18 +391,6 @@ public class RecordSignal extends JPanel implements ActionListener {
     @Subscribe
     public void onBitalinoDisconnected(BITalinoDisconnectedEvent event) {
 
-        /*System.out.println("BITalino disconnected");
-        // Only attempt upload if a partial recording exists
-        if (event.isPartialRecordingAvailable()) {
-            startSavingProcess();
-        } else {
-            showFeedbackMessage(errorMessage2,
-                    "BITalino disconnected unexpectedly. No recording data available.");
-            buttonsLayout.show(buttonStack, "START");
-            back2MenuBt.setVisible(true);
-            recording = false;
-        }*/
-
         SwingUtilities.invokeLater(() -> {
 
             System.out.println("Bitalino disconnected");
@@ -476,7 +452,7 @@ public class RecordSignal extends JPanel implements ActionListener {
                     byte[] zipBytes = Files.readAllBytes(zip.toPath());
                     String base64Zip = Base64.getEncoder().encodeToString(zipBytes);
 
-                    return appMain.client.sendJsonToServer(patient_id, sampling_rate, timestamp, filename, base64Zip);
+                    return appMain.client.sendSignalToServer(patient_id, sampling_rate, timestamp, filename, base64Zip);
                 } catch (Exception e) {
                     // If anything fails during encoding or sending
                     return false;
