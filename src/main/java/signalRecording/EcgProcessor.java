@@ -4,7 +4,20 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-
+/**
+ * Processes streaming ECG samples in real-time using a sliding 8-second window.
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *     <li>Maintains a time-based window of recent ECG samples</li>
+ *     <li>Tracks timestamps for RR-interval computation</li>
+ *     <li>Detects R-peaks using an adaptive threshold</li>
+ *     <li>Computes heart rate (BPM)</li>
+ *     <li>Estimates if heart rate is rising compared to a short-term baseline</li>
+ * </ul>
+ * This is a lightweight real-time approximation suitable for wearables
+ * or BITalino-style ECG streams.
+ */
 public class EcgProcessor {
     private final int WINDOW_MS = 8000; //8 seconds of recent ECG data
     private final Deque<Double> ecgWindow = new ArrayDeque<>(); //stores raw ECG samples
@@ -16,8 +29,22 @@ public class EcgProcessor {
     //Detects heartbeats by looking for samples larger than a threashold
     private double threshold = 500;
 
-    ///Each time you store the sample, you store the value and its timestamp. You remove samples older than 8 seconds.
-    /// This ensures processing always uses a sliding window of recent ECG
+    /**
+     * Adds a new ECG sample to the processor and updates the sliding 8-second window.
+     * Performs simple adaptive-threshold R-peak detection.
+     *
+     * <p>Steps:</p>
+     * <ol>
+     *     <li>Store the sample and its timestamp</li>
+     *     <li>Remove samples older than 8 seconds</li>
+     *     <li>If amplitude exceeds adaptive threshold → detect R-peak</li>
+     *     <li>Adapt threshold upward for peak, downward for noise</li>
+     *     <li>Keep at most 20 recent R-peaks</li>
+     * </ol>
+     *
+     * @param ecg The ECG sample amplitude
+     * @param ts  Timestamp of the sample (in milliseconds)
+     */
     public void addSample(double ecg, long ts) {
         ecgWindow.add(ecg);
         timeWindow.add(ts);
@@ -42,7 +69,11 @@ public class EcgProcessor {
         // keep only last few peaks
         while (rPeaks.size() > 20) rPeaks.remove(0);
     }
-
+    /**
+     * Computes the current heart rate in beats per minute using recent RR intervals.
+     *
+     * @return Heart rate in BPM, or {@code Double.NaN} if insufficient data.
+     */
     public double getCurrentHeartRate() {
         if (rPeaks.size() < 2) return Double.NaN;
 
@@ -56,6 +87,13 @@ public class EcgProcessor {
 
         return 60000.0 / avgRR; //convert to beats per minute
     }
+    /**
+     * Determines whether the current heart rate is rising significantly
+     * compared to earlier RR-interval-derived baseline.
+     *
+     * @return {@code true} if the heart rate has increased by at least 15 BPM,
+     *         {@code false} otherwise.
+     */
 
     public boolean isHeartRateRising() {
         if (rPeaks.size() < 5) return false;
@@ -78,19 +116,55 @@ public class EcgProcessor {
         return hrNow > hrBaseline + 15; // rising by +15 bpm
     }
 }
+/**
+ * Represents the estimated movement state derived from accelerometer variance.
+ * <ul>
+ *     <li>{@link #CALM} – minimal movement</li>
+ *     <li>{@link #MODERATE} – medium movement (walking, jostling)</li>
+ *     <li>{@link #ABNORMAL} – intense or irregular movement, possibly pathological</li>
+ * </ul>
+ */
 
 enum MovementState { CALM, MODERATE, ABNORMAL }
+/**
+ * Processes accelerometer magnitude samples using a fixed-size sliding window.
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *     <li>Maintains the most recent 128 accelerometer magnitude samples</li>
+ *     <li>Computes mean and variance of movement</li>
+ *     <li>Classifies movement intensity into CALM, MODERATE, or ABNORMAL</li>
+ * </ul>
+ * Variance thresholds are approximate and should be tuned for real signals.
+ */
 
 class AccProcessor {
     private final int WINDOW = 128;
     private final List<Double> mags = new ArrayList<>();
-
+    /**
+     * Adds one accelerometer magnitude sample to the sliding window.
+     *
+     * @param acc Accelerometer magnitude (e.g., sqrt(x² + y² + z²))
+     * @param ts  Timestamp of the sample (not used directly)
+     */
     public void addSample(double acc, long ts) {
         //calculates the avg
         mags.add(acc);
         if (mags.size() > WINDOW) mags.remove(0);
     }
-
+    /**
+     * Computes the current movement state based on the variance
+     * of recent accelerometer magnitude samples.
+     *
+     * <p>Thresholds (tunable):</p>
+     * <ul>
+     *     <li>variance &gt; 30000 → ABNORMAL</li>
+     *     <li>variance &gt; 8000 → MODERATE</li>
+     *     <li>otherwise → CALM</li>
+     * </ul>
+     *
+     * @return The estimated {@link MovementState}.
+     */
     public MovementState getMovementState() {
         if (mags.size() < WINDOW) return MovementState.CALM;
 
