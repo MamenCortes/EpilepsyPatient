@@ -1,5 +1,6 @@
 package signalRecording;
 /**
+<<<<<<< HEAD
  * Exception class used to represent errors that occur during the recording
  * or processing of physiological signals (ECG, ACC, etc.).
  * <p>
@@ -11,6 +12,10 @@ package signalRecording;
  * The full message from the associated {@code RecordingErrors} enum is passed
  * to the superclass {@link Exception} so that stack traces and logs contain
  * meaningful diagnostic information.
+=======
+ * Exception representing an error during signal recording.
+ * Wraps a {@link RecordingErrors} enum value with detailed information.
+>>>>>>> 1cc900376a21459ac91bc73893f70ad72a30c7ad
  */
 public class RecordingException extends Exception {
 
@@ -31,6 +36,7 @@ public class RecordingException extends Exception {
    *
    * @return The associated recording error type.
    */
+
 
   public RecordingErrors getError() {
     return error;
