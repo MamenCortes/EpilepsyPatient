@@ -1,6 +1,5 @@
-package BITalino;
+package signalRecording;
 
-import Events.*;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -86,9 +85,9 @@ class AccProcessor {
     private final int WINDOW = 128;
     private final List<Double> mags = new ArrayList<>();
 
-    public void addSample(double ax, double ay, double az, long ts) {
-        double mag = Math.sqrt(ax*ax + ay*ay + az*az); //calculates the avg
-        mags.add(mag);
+    public void addSample(double acc, long ts) {
+        //calculates the avg
+        mags.add(acc);
         if (mags.size() > WINDOW) mags.remove(0);
     }
 
