@@ -26,7 +26,7 @@ git clone https://github.com/MamenCortes/EpilepsyPatient
 2. Navigate to the project root folder.
 3. Run the executable `.jar` or execute the `Application.java` class.
  ```bash
-  java -jar EpilepsyDoctor.jar
+  java -jar EpilepsyPatient.jar
   ```
 
 # Initial Conditions
@@ -34,11 +34,10 @@ Upon executing the system for the first time, the following users will be automa
 
 | Email  | Password   | Role     |
 |-----------|------------|----------|
-| @nightguardian.com     | 12345678   | Doctor    |
-| @nightguardian.com     | 12345678   | Doctor    |
-| @nightguardian.com     | 12345678   | Doctor    |
+| sofia.bodega@nightguardian.com     | sofiabodega1   | Patient    |
+| guillermo.sanchez@nightguardian.com     | guillesanchez1   | Patient    |
 
-*The password 12345678 was used by default. However, it can be changed from the LogIn view*
+> Disclaimer: their public and private keys are in the project for testing purposes. 
 
 # User Interface Guide
 ## 1. Connecting to the Server
