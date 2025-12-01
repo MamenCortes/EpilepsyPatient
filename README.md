@@ -40,6 +40,7 @@ Upon executing the system for the first time, the following users will be automa
 > Disclaimer: their public and private keys are in the project for testing purposes. 
 
 # User Interface Guide
+> See [the app mock up](Patient_mockup.pdf) for a complete view of the interface. 
 ## 1. Connecting to the Server
 Upon launch, the patient is prompted to enter the **Server IP address**.
 
