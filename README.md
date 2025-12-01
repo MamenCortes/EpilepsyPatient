@@ -29,6 +29,12 @@ git clone https://github.com/MamenCortes/EpilepsyPatient
   java -jar EpilepsyPatient.jar
   ```
 
+> This app works with 2 other applications:
+> * [Admin App](https://github.com/MariaMM04/EpilepsyAdmin)
+> * [Doctor App](https://github.com/MamenCortes/EpilepsyDoctor)
+>   
+> Check those projects for a full experience of the platform.
+
 # Initial Conditions
 Upon executing the system for the first time, the following users will be automatically added to facilitate the system's navigation: 
 
