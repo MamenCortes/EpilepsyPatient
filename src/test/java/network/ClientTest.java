@@ -1,8 +1,10 @@
 package network;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import encryption.AESUtil;
+import encryption.RSAKeyManager;
 import org.junit.jupiter.api.*;
 import pojos.AppData;
 import pojos.Doctor;
@@ -20,28 +22,35 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.crypto.SecretKey;
 
+import java.io.*;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 //TODO: check tests with Public key encryption changes
 public class ClientTest {
 
     Client client;
-    Application app;
     Socket socket;
     PrintWriter out;
     BufferedReader in;
 
+    // Reflection helper
+    private static void setField(Object obj, String name, Object value) throws Exception {
+        Field f = obj.getClass().getDeclaredField(name);
+        f.setAccessible(true);
+        f.set(obj, value);
+    }
+
     @BeforeEach
     void setup() throws Exception {
-        app = mock(Application.class);
+        client = new Client();
         socket = mock(Socket.class);
-
-        // Mock IO streams
         in = mock(BufferedReader.class);
         out = mock(PrintWriter.class);
-
-        client = new Client();
 
         setField(client, "socket", socket);
         setField(client, "in", in);
@@ -49,36 +58,25 @@ public class ClientTest {
         setField(client, "running", true);
     }
 
-    // Utility reflection method
-    private static void setField(Object obj, String name, Object value) throws Exception {
-        Field f = obj.getClass().getDeclaredField(name);
-        f.setAccessible(true);
-        f.set(obj, value);
-    }
-
+    // -------------------------------------------------------------------------
     @Test
     void testConnectSuccess() throws Exception {
 
         InputStream mockInput = new ByteArrayInputStream("{\"type\":\"PING\"}\n".getBytes());
         ByteArrayOutputStream mockOutput = new ByteArrayOutputStream();
 
-        // Cliente es un spy para interceptar new Socket(...)
         Client client = spy(new Client());
 
-        // Cuando connect llame a new Socket(ip,port) → devolver mockSocket
         doReturn(socket).when(client).createSocket(anyString(), anyInt());
-
-        // Mockear streams del socket
         when(socket.getInputStream()).thenReturn(mockInput);
         when(socket.getOutputStream()).thenReturn(mockOutput);
 
-        // Ejecutar
         boolean ok = client.connect("localhost", 9009);
 
-        // Validaciones
         assertTrue(ok);
     }
 
+    // -------------------------------------------------------------------------
     @Test
     void testLoginSuccess() throws Exception {
 
@@ -91,18 +89,23 @@ public class ClientTest {
         when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
         when(mockSocket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
 
-        // --- Inject writer/reader ---
         PrintWriter mockWriter = mock(PrintWriter.class);
         BufferedReader mockReader = mock(BufferedReader.class);
 
         setField(client, "out", mockWriter);
         setField(client, "in", mockReader);
 
-        // --- Inject AES key (simulate handshake done) ---
-        SecretKey fakeAES = AESUtil.generateAESKey();
-        setField(client, "token", fakeAES);
+        // --- Store RSA keys for this user ---
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+        gen.initialize(2048);
+        KeyPair pair = gen.generateKeyPair();
+        RSAKeyManager.saveKey(pair, "test_test_com");
 
-        // --- Fake queue (decrypted messages) ---
+        // --- Inject AES token (skip handshake) ---
+        SecretKey fakeAES = AESUtil.generateAESKey();
+        client.saveToken(fakeAES);
+
+        // --- Fake decrypted queue ---
         BlockingQueue<JsonObject> q = new LinkedBlockingQueue<>();
 
         // LOGIN_RESPONSE
@@ -111,15 +114,27 @@ public class ClientTest {
         ).getAsJsonObject();
         q.add(loginResp);
 
-        // REQUEST_PATIENT_BY_EMAIL_RESPONSE
-        Patient fakePatient = new Patient("A","B","mail",999, "F",LocalDate.now());
-        fakePatient.setId(1);
+        // ---- CORRECT Patient JSON (must match Patient.fromJason) ----
+        JsonObject patientJson = new JsonObject();
+        patientJson.addProperty("id", 1);
+        patientJson.addProperty("name", "A");
+        patientJson.addProperty("surname", "B");
+        patientJson.addProperty("email", "test@test.com");
+        patientJson.addProperty("contact", 999);
+        patientJson.addProperty("dateOfBirth", LocalDate.now().toString());  // correct name
+        patientJson.addProperty("gender", "F");
+        patientJson.addProperty("doctorId", 5);  // required
+
+        // optional fields
+        patientJson.add("signals", new JsonArray());
+        patientJson.add("reports", new JsonArray());
+
         JsonObject patientResp = new JsonObject();
         patientResp.addProperty("type","REQUEST_PATIENT_BY_EMAIL_RESPONSE");
         patientResp.addProperty("status","SUCCESS");
-        patientResp.add("patient", fakePatient.toJason());
-        q.add(patientResp);
+        patientResp.add("patient", patientJson);
 
+        q.add(patientResp);
         setField(client, "responseQueue", q);
 
         // --- Act ---
@@ -132,14 +147,11 @@ public class ClientTest {
     }
 
 
-
-
+    // -------------------------------------------------------------------------
     @Test
     void testStopClientInitiatedByClient() throws Exception {
 
         Client client = spy(new Client());
-
-        // --- Mock socket ---
         Socket mockSocket = mock(Socket.class);
         doReturn(mockSocket).when(client).createSocket(anyString(), anyInt());
 
@@ -148,41 +160,31 @@ public class ClientTest {
         when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
         when(mockSocket.isClosed()).thenReturn(false);
 
-        // Inject AES token
         SecretKey aes = AESUtil.generateAESKey();
         setField(client, "token", aes);
 
-        // Connect
         client.connect("localhost", 9009);
 
-        // --- Act ---
         client.stopClient(true);
 
-        // --- Extract ONLY the encrypted JSON line ---
         String encryptedLine = Arrays.stream(mockOutput.toString().split("\n"))
                 .filter(l -> l.trim().startsWith("{") && l.contains("\"ENCRYPTED\""))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("No encrypted JSON found"));
+                .orElseThrow();
 
-        // --- Parse encrypted JSON wrapper ---
         JsonObject wrapper = JsonParser.parseString(encryptedLine).getAsJsonObject();
         String encryptedPayload = wrapper.get("data").getAsString();
-
-        // --- Decrypt payload ---
         String decrypted = AESUtil.decrypt(encryptedPayload, aes);
 
-        // --- Assert STOP_CLIENT was sent ---
         assertTrue(decrypted.contains("STOP_CLIENT"));
     }
 
-
-
+    // -------------------------------------------------------------------------
     @Test
     void testStopClientServerConnectionError() throws Exception {
 
         Client client = spy(new Client());
 
-        // Mock socket
         Socket mockSocket = mock(Socket.class);
         doReturn(mockSocket).when(client).createSocket(anyString(), anyInt());
 
@@ -190,106 +192,91 @@ public class ClientTest {
         when(mockSocket.getOutputStream()).thenReturn(mockOutput);
         when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
 
-        // Inject AES token
         SecretKey aes = AESUtil.generateAESKey();
         setField(client, "token", aes);
 
         client.connect("localhost", 9009);
 
-        // Act
         client.stopClient(false);
 
-        // Assert → client does NOT send STOP_CLIENT when not initiated by client
-        String output = mockOutput.toString();
-        assertFalse(output.contains("STOP_CLIENT"));
-        assertFalse(output.contains("ENCRYPTED"));
+        String out = mockOutput.toString();
+        assertFalse(out.contains("STOP_CLIENT"));
+        assertFalse(out.contains("ENCRYPTED"));
     }
 
-
+    // -------------------------------------------------------------------------
     @Test
     void testStopClientWhenServerSendsStop() throws Exception {
 
         Client client = spy(new Client());
-
         Socket mockSocket = mock(Socket.class);
-        doReturn(mockSocket).when(client).createSocket(anyString(), anyInt());
 
+        doReturn(mockSocket).when(client).createSocket(anyString(), anyInt());
         when(mockSocket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
         when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
+        when(mockSocket.isClosed()).thenReturn(false);
 
-        // Inject AES key
         SecretKey aes = AESUtil.generateAESKey();
         setField(client, "token", aes);
 
         client.connect("localhost", 9009);
 
-        // --- Inject STOP_CLIENT into queue (as decrypted JSON) ---
         BlockingQueue<JsonObject> q = new LinkedBlockingQueue<>();
         JsonObject stop = new JsonObject();
         stop.addProperty("type", "STOP_CLIENT");
         q.add(stop);
-
         setField(client, "responseQueue", q);
 
-        // Wait for listener (or directly call stopClient)
         client.stopClient(false);
 
-        // Assert: no STOP_CLIENT was sent (server initiated)
-        // And client shuts down cleanly.
         assertFalse(mockSocket.isClosed());
     }
 
-
+    // -------------------------------------------------------------------------
     @Test
     void testGetDoctorFromPatient() throws Exception {
 
         Client client = spy(new Client());
-
-        // Mock socket
         Socket mockSocket = mock(Socket.class);
-        doReturn(mockSocket).when(client).createSocket(anyString(), anyInt());
 
+        doReturn(mockSocket).when(client).createSocket(anyString(), anyInt());
         when(mockSocket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
         when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
 
-        // Inject AES key
         SecretKey aes = AESUtil.generateAESKey();
         setField(client, "token", aes);
 
         client.connect("localhost", 9009);
 
-        // Fake response queue
         BlockingQueue<JsonObject> q = new LinkedBlockingQueue<>();
 
-        Doctor expected = new Doctor();
-        expected.setName("House");
+        Doctor d = new Doctor("House", "MD", "mail", 888, "Neuro");
+        d.setId(1);
 
         JsonObject resp = new JsonObject();
-        resp.addProperty("type", "REQUEST_DOCTOR_BY_ID_RESPONSE");
-        resp.addProperty("status", "SUCCESS");
-        resp.add("doctor", expected.toJason());
-
+        resp.addProperty("type","REQUEST_DOCTOR_BY_ID_RESPONSE");
+        resp.addProperty("status","SUCCESS");
+        resp.add("doctor", d.toJason());
         q.add(resp);
 
         setField(client, "responseQueue", q);
 
-        // --- Act ---
-        Doctor d = client.getDoctorFromPatient(1, 1, 1);
+        Doctor result = client.getDoctorFromPatient(1, 1, 1);
 
-        // --- Assert ---
-        assertNotNull(d);
-        assertEquals("House", d.getName());
+        assertNotNull(result);
+        assertEquals("House", result.getName());
     }
 
+    // -------------------------------------------------------------------------
     @Test
     void testSendSignalToServer() throws Exception {
 
         Client client = spy(new Client());
         SecretKey aes = AESUtil.generateAESKey();
-        OutputStream out = mock(OutputStream.class);
-        PrintWriter mockWriter = new  PrintWriter(out);
 
-        // Fake socket
+        OutputStream out = mock(OutputStream.class);
+        PrintWriter mockWriter = new PrintWriter(out);
+
         doReturn(socket).when(client).createSocket(any(), anyInt());
         when(socket.getOutputStream()).thenReturn(out);
         when(socket.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
@@ -298,66 +285,74 @@ public class ClientTest {
         setField(client, "out", mockWriter);
 
         BlockingQueue<JsonObject> q = new LinkedBlockingQueue<>();
-
         JsonObject ok = new JsonObject();
-        ok.addProperty("type", "UPLOAD_SIGNAL_RESPONSE");
-        ok.addProperty("status", "SUCCESS");
+        ok.addProperty("type","UPLOAD_SIGNAL_RESPONSE");
+        ok.addProperty("status","SUCCESS");
         q.add(ok);
         setField(client, "responseQueue", q);
 
-        boolean result = client.sendSignalToServer(
-                12, 500, LocalDateTime.now(), "sig.zip", "ABC123"
-        );
+        boolean result =
+                client.sendSignalToServer(12, 500, LocalDateTime.now(),
+                        "sig.zip", "ABC123");
 
         assertTrue(result);
     }
 
+    // -------------------------------------------------------------------------
     @Test
     void testSendReport() throws Exception {
 
         Client client = spy(new Client());
         SecretKey aes = AESUtil.generateAESKey();
+
         OutputStream out = mock(OutputStream.class);
-        PrintWriter mockWriter = new  PrintWriter(out);
+        PrintWriter mockWriter = new PrintWriter(out);
+
         setField(client, "token", aes);
         setField(client, "out", mockWriter);
 
         BlockingQueue<JsonObject> q = new LinkedBlockingQueue<>();
-
         JsonObject ok = new JsonObject();
-        ok.addProperty("type", "SAVE_REPORT_RESPONSE");
-        ok.addProperty("status", "SUCCESS");
+        ok.addProperty("type","SAVE_REPORT_RESPONSE");
+        ok.addProperty("status","SUCCESS");
         q.add(ok);
         setField(client, "responseQueue", q);
 
         Report r = new Report();
 
-        assertDoesNotThrow(() ->
-                client.sendReport(r, 3, 5)
-        );
+        assertDoesNotThrow(() -> client.sendReport(r, 3, 5));
     }
 
+    // -------------------------------------------------------------------------
     @Test
     void testChangePassword() throws Exception {
 
         Client client = spy(new Client());
         SecretKey aes = AESUtil.generateAESKey();
+
+        // RSA keypair required
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+        gen.initialize(2048);
+        KeyPair pair = gen.generateKeyPair();
+        String file = "mail";
+        RSAKeyManager.saveKey(pair, file);
+
         OutputStream out = mock(OutputStream.class);
-        PrintWriter mockWriter = new  PrintWriter(out);
+        PrintWriter mockWriter = new PrintWriter(out);
+
         setField(client, "token", aes);
         setField(client, "out", mockWriter);
 
-        BlockingQueue<JsonObject> q = new LinkedBlockingQueue<>();
+        // Fake server public key for signature verification
+        setField(client, "serverPublicKey", pair.getPublic());
 
+        BlockingQueue<JsonObject> q = new LinkedBlockingQueue<>();
         JsonObject ok = new JsonObject();
-        ok.addProperty("type", "CHANGE_PASSWORD_REQUEST_RESPONSE");
-        ok.addProperty("status", "SUCCESS");
+        ok.addProperty("type","CHANGE_PASSWORD_REQUEST_RESPONSE");
+        ok.addProperty("status","SUCCESS");
         q.add(ok);
         setField(client, "responseQueue", q);
 
-        assertDoesNotThrow(() ->
-                client.changePassword("mail", "pw")
-        );
+        assertDoesNotThrow(() -> client.changePassword("mail", "pw"));
     }
-
 }
